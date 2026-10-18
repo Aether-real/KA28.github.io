@@ -112,7 +112,7 @@ body{
 .card,.stat-card{border-radius:22px!important;transition:transform .32s cubic-bezier(.2,.8,.2,1),border-color .32s,box-shadow .32s}
 .card:hover,.stat-card:hover{transform:translateY(-2px);border-color:rgba(119,240,208,.24)!important;box-shadow:0 20px 46px rgba(0,0,0,.22),0 0 0 1px rgba(119,240,208,.035)}
 .card-head{border-bottom-color:rgba(199,222,255,.08)}
-button,.chip,.sphere{transition:all .24s ease}
+button{transition:color .18s ease,background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease,opacity .18s ease}.chip,.sphere{transition:color .24s ease,background-color .24s ease,border-color .24s ease,box-shadow .24s ease}
 button:active{transform:scale(.975)}
 .mobile-nav{
  position:fixed;z-index:60;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);
@@ -123,13 +123,13 @@ button:active{transform:scale(.975)}
  overflow:hidden;isolation:isolate;
 }
 .mobile-nav::before{
- content:"";position:absolute;z-index:-1;top:5px;bottom:5px;left:5px;
- width:calc((100% - 10px)/6);border-radius:16px;
+ content:"";position:absolute;z-index:-1;top:5px;bottom:5px;left:0;
+ width:var(--nav-indicator-width,calc((100% - 10px)/6));border-radius:16px;
  background:linear-gradient(145deg,rgba(119,240,208,.20),rgba(105,153,255,.14));
  border:1px solid rgba(119,240,208,.17);
  box-shadow:0 4px 22px rgba(75,203,183,.09),inset 0 1px rgba(255,255,255,.08);
- transform:translateX(calc(var(--active-index,0) * 100%));
- transition:transform .28s cubic-bezier(.2,.75,.25,1); will-change:transform;
+ transform:translateX(var(--nav-indicator-left,0px));
+ transition:transform .24s cubic-bezier(.2,.75,.25,1),width .18s ease; will-change:transform,width;
 }
 .mobile-nav button{
  min-width:0;position:relative;z-index:1;border:0!important;border-radius:15px!important;
@@ -324,7 +324,7 @@ img,svg,canvas,table{max-width:100%}
  .stat-card{padding:11px}
  .card-head{gap:8px}
  .card-tools{gap:5px}
- .mobile-nav{left:8px;width:calc(100% - 16px);}
+ /* Mobile nav is anchored by the final left/right responsive rule. */
 }
 @media(max-width:340px){
  .topbar-kicker{display:none}
@@ -389,7 +389,7 @@ img,svg,canvas,table{max-width:100%}
 .algo-one-trigger{border-color:#3b6b67!important;color:var(--mint)!important;background:#17312f!important;font-weight:800}
 #page-model.algorithm-one-active>.grid.model-grid,#page-model.algorithm-one-active>.combo-pred-card,#page-model.algorithm-one-active>.bottom-grid{display:none!important}
 #algorithmOneView[hidden]{display:none!important}#algorithmOneView{display:block;margin-top:18px;animation:fade .22s ease}
-.ka-algo-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 15px}.ka-algo-toolbar h3{margin:5px 0;font-size:22px;letter-spacing:-.03em}.ka-algo-toolbar p{color:var(--muted);font-size:11px;margin:0}.ka-algo-live{margin-bottom:15px;padding:17px 20px;background:linear-gradient(125deg,#17312f,#142331 65%,#192a3a);border-color:#31504e}.ka-algo-live-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.ka-algo-kicker,.ka-algo-stat-grid span{color:var(--muted);font-size:10px}.ka-algo-period{font-weight:750;font-size:15px;margin-top:4px}.ka-algo-live-main{display:flex;align-items:center;justify-content:center;gap:25px;flex-wrap:wrap;padding:14px 0 2px}.ka-algo-balls{display:flex;align-items:center;gap:9px}.ka-algo-balls span{width:clamp(43px,6vw,58px);height:clamp(43px,6vw,58px);border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 30% 25%,#4e8eff,#1741a5 72%);border:2px solid #759cff;color:white;font-weight:850;font-size:25px;box-shadow:0 6px 15px #0003}.ka-algo-balls span:nth-of-type(2){background:radial-gradient(circle at 30% 25%,#44d4a1,#08734d 72%);border-color:#7adfba}.ka-algo-balls span:nth-of-type(3){background:radial-gradient(circle at 30% 25%,#ffb35f,#9a480c 72%);border-color:#ffcc8b}.ka-algo-balls i{font-style:normal;color:#8097a9;font-weight:800}.ka-algo-sum{display:flex;align-items:baseline;gap:9px;color:var(--muted);font-size:11px}.ka-algo-sum strong{font-size:35px;color:var(--mint);letter-spacing:-.04em}.ka-algo-sum span{border:1px solid #36524f;background:#1b3937;color:#a5e7d7;border-radius:8px;padding:5px 8px;font-weight:800}.ka-algo-results{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);margin-bottom:15px}.ka-algo-primary .card-body{padding-bottom:17px}.ka-algo-picks{display:grid;grid-template-columns:.8fr 1.2fr;gap:10px}.ka-algo-pick{padding:15px;border-radius:14px;border:1px solid #344451;background:#111d29;min-width:0}.ka-algo-pick small,.ka-algo-pick span{display:block;color:var(--muted);font-size:10px}.ka-algo-pick strong{display:block;font-size:clamp(25px,3vw,34px);margin:8px 0;color:var(--text);letter-spacing:.02em}.ka-algo-pick.kill{border-color:#66424b;background:linear-gradient(145deg,#34212b,#1b202c)}.ka-algo-pick.kill strong{color:#ff9ca9}.ka-algo-pick.double{border-color:#315c52;background:linear-gradient(145deg,#19372f,#172632)}.ka-algo-pick.double strong{color:var(--mint);white-space:nowrap}.ka-algo-special-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:17px 0 9px}.ka-algo-special-head b{font-size:12px}.ka-algo-special-head span{font-size:10px;color:var(--muted)}.ka-algo-specials{display:flex;gap:8px;flex-wrap:wrap}.ka-algo-specials span{min-width:43px;text-align:center;border:1px solid #6a573a;background:#30291e;color:#f6d18d;padding:9px 11px;border-radius:10px;font-weight:850;font-size:17px}.ka-algo-specials span.hit{background:#1d3932;border-color:#367f6c;color:#8df0cc}.ka-algo-disclaimer{font-size:10px;line-height:1.6;color:#91a3b3;border-top:1px solid #293947;margin-top:15px;padding-top:12px}.ka-algo-stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ka-algo-stat-grid>div{border:1px solid #293d4b;background:#111d29;border-radius:12px;padding:12px;min-width:0}.ka-algo-stat-grid span{display:block;margin-bottom:6px}.ka-algo-stat-grid strong{display:block;font-size:15px;overflow-wrap:anywhere}.ka-algo-switchline{display:flex;align-items:center;gap:8px;margin-top:13px;font-size:10px;color:var(--muted)}.ka-algo-switchline b{color:var(--text);font-size:13px}.ka-algo-switchline .tiny-tag{margin-left:auto}.ka-algo-tools{grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);margin-bottom:15px;align-items:stretch}.ka-algo-label{display:block;color:var(--muted);font-size:11px;margin:0 0 8px}.ka-algo-controls{display:flex;gap:8px;margin-bottom:17px}.ka-algo-controls select{flex:1;min-width:0}.ka-algo-backtest{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:15px}.ka-algo-backtest .choice{flex:1;min-width:55px}.ka-algo-scan-btn{width:100%;margin-top:1px}.ka-algo-progress-wrap{margin-top:12px}.ka-algo-progress{height:7px;border-radius:9px;background:#283847;overflow:hidden}.ka-algo-progress span{display:block;width:0;height:100%;background:linear-gradient(90deg,var(--mint),var(--blue));transition:width .1s}.ka-algo-progress-wrap small{display:block;color:var(--muted);font-size:10px;margin-top:6px}.ka-algo-message{font-size:10px;color:var(--muted);min-height:16px;margin-top:9px}.ka-algo-steps{font:11px/1.8 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;background:#0f1923;border:1px solid #263846;border-radius:12px;padding:14px;color:#bdd0df;min-height:180px}.ka-algo-history-card .table-wrap{padding:0 8px 8px}.ka-algo-history-card th,.ka-algo-history-card td{font-size:10px}.ka-algo-result-ok{color:var(--mint);font-weight:800}.ka-algo-result-no{color:var(--rose);font-weight:800}.ka-algo-result-neutral{color:var(--amber);font-weight:800}.ka-algo-rank-card{margin-bottom:15px}.ka-algo-rank-list{display:grid;gap:8px}.ka-algo-rank-item{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);color:var(--text);cursor:pointer;transition:border-color .15s,transform .15s}.ka-algo-rank-item:hover,.ka-algo-rank-item.active{border-color:var(--mint);transform:translateY(-1px)}.ka-algo-rank-left{display:flex;align-items:center;gap:10px;min-width:0}.ka-algo-rank-number{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:9px;background:var(--surface-3);font-weight:850}.ka-algo-rank-range{font-weight:800;font-size:12px}.ka-algo-rank-kill{font-size:10px;color:var(--muted);margin-top:4px}.ka-algo-rank-rate{font-size:17px;font-weight:850;color:var(--mint);white-space:nowrap}.ka-algo-rank-empty{padding:18px;text-align:center;color:var(--muted);font-size:11px}.ka-algo-history-summary{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:10px;color:var(--muted)}.ka-algo-history-summary span:not(.tiny-tag){border:1px solid var(--line);border-radius:7px;padding:5px 7px}.ka-algo-hit{color:var(--mint);font-weight:850}.ka-algo-miss{color:var(--rose);font-weight:850}
+.ka-algo-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 15px}.ka-algo-toolbar h3{margin:5px 0;font-size:22px;letter-spacing:-.03em}.ka-algo-toolbar p{color:var(--muted);font-size:11px;margin:0}.ka-algo-live{margin-bottom:15px;padding:17px 20px;background:linear-gradient(125deg,#17312f,#142331 65%,#192a3a);border-color:#31504e}.ka-algo-live-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.ka-algo-kicker,.ka-algo-stat-grid span{color:var(--muted);font-size:10px}.ka-algo-period{font-weight:750;font-size:15px;margin-top:4px}.ka-algo-live-main{display:flex;align-items:center;justify-content:center;gap:25px;flex-wrap:wrap;padding:14px 0 2px}.ka-algo-balls{display:flex;align-items:center;gap:9px}.ka-algo-balls span{width:clamp(43px,6vw,58px);height:clamp(43px,6vw,58px);border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 30% 25%,#4e8eff,#1741a5 72%);border:2px solid #759cff;color:white;font-weight:850;font-size:25px;box-shadow:0 6px 15px #0003}.ka-algo-balls span:nth-of-type(2){background:radial-gradient(circle at 30% 25%,#44d4a1,#08734d 72%);border-color:#7adfba}.ka-algo-balls span:nth-of-type(3){background:radial-gradient(circle at 30% 25%,#ffb35f,#9a480c 72%);border-color:#ffcc8b}.ka-algo-balls i{font-style:normal;color:#8097a9;font-weight:800}.ka-algo-sum{display:flex;align-items:baseline;gap:9px;color:var(--muted);font-size:11px}.ka-algo-sum strong{font-size:35px;color:var(--mint);letter-spacing:-.04em}.ka-algo-sum span{border:1px solid #36524f;background:#1b3937;color:#a5e7d7;border-radius:8px;padding:5px 8px;font-weight:800}.ka-algo-results{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);margin-bottom:15px}.ka-algo-primary .card-body{padding-bottom:17px}.ka-algo-picks{display:grid;grid-template-columns:.8fr 1.2fr;gap:10px}.ka-algo-pick{padding:15px;border-radius:14px;border:1px solid #344451;background:#111d29;min-width:0}.ka-algo-pick small,.ka-algo-pick span{display:block;color:var(--muted);font-size:10px}.ka-algo-pick strong{display:block;font-size:clamp(25px,3vw,34px);margin:8px 0;color:var(--text);letter-spacing:.02em}.ka-algo-pick.kill{border-color:#66424b;background:linear-gradient(145deg,#34212b,#1b202c)}.ka-algo-pick.kill strong{color:#ff9ca9}.ka-algo-pick.double{border-color:#315c52;background:linear-gradient(145deg,#19372f,#172632)}.ka-algo-pick.double strong{color:var(--mint);white-space:nowrap}.ka-algo-special-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:17px 0 9px}.ka-algo-special-head b{font-size:12px}.ka-algo-special-head span{font-size:10px;color:var(--muted)}.ka-algo-specials{display:flex;gap:8px;flex-wrap:wrap}.ka-algo-specials span{min-width:43px;text-align:center;border:1px solid #6a573a;background:#30291e;color:#f6d18d;padding:9px 11px;border-radius:10px;font-weight:850;font-size:17px}.ka-algo-specials span.hit{background:#1d3932;border-color:#367f6c;color:#8df0cc}.ka-algo-disclaimer{font-size:10px;line-height:1.6;color:#91a3b3;border-top:1px solid #293947;margin-top:15px;padding-top:12px}.ka-algo-stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ka-algo-stat-grid>div{border:1px solid #293d4b;background:#111d29;border-radius:12px;padding:12px;min-width:0}.ka-algo-stat-grid span{display:block;margin-bottom:6px}.ka-algo-stat-grid strong{display:block;font-size:15px;overflow-wrap:anywhere}.ka-algo-switchline{display:flex;align-items:center;gap:8px;margin-top:13px;font-size:10px;color:var(--muted)}.ka-algo-switchline b{color:var(--text);font-size:13px}.ka-algo-switchline .tiny-tag{margin-left:auto}.ka-algo-tools{grid-template-columns:minmax(0,1fr);margin-bottom:15px;align-items:stretch}.ka-algo-label{display:block;color:var(--muted);font-size:11px;margin:0 0 8px}.ka-algo-controls{display:flex;gap:8px;margin-bottom:17px}.ka-algo-controls select{flex:1;min-width:0}.ka-algo-backtest{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:15px}.ka-algo-backtest .choice{flex:1;min-width:55px}.ka-algo-scan-btn{width:100%;margin-top:1px}.ka-algo-progress-wrap{margin-top:12px}.ka-algo-progress{height:7px;border-radius:9px;background:#283847;overflow:hidden}.ka-algo-progress span{display:block;width:0;height:100%;background:linear-gradient(90deg,var(--mint),var(--blue));transition:width .1s}.ka-algo-progress-wrap small{display:block;color:var(--muted);font-size:10px;margin-top:6px}.ka-algo-message{font-size:10px;color:var(--muted);min-height:16px;margin-top:9px}.ka-algo-history-card .table-wrap{padding:0 8px 8px}.ka-algo-history-card th,.ka-algo-history-card td{font-size:10px}.ka-algo-result-ok{color:var(--mint);font-weight:800}.ka-algo-result-no{color:var(--rose);font-weight:800}.ka-algo-result-neutral{color:var(--amber);font-weight:800}.ka-algo-rank-card{margin-bottom:15px}.ka-algo-rank-list{display:grid;gap:8px}.ka-algo-rank-item{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);color:var(--text);cursor:pointer;transition:border-color .15s,transform .15s}.ka-algo-rank-item:hover,.ka-algo-rank-item.active{border-color:var(--mint);transform:translateY(-1px)}.ka-algo-rank-left{display:flex;align-items:center;gap:10px;min-width:0}.ka-algo-rank-number{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:9px;background:var(--surface-3);font-weight:850}.ka-algo-rank-range{font-weight:800;font-size:12px}.ka-algo-rank-kill{font-size:10px;color:var(--muted);margin-top:4px}.ka-algo-rank-rate{font-size:17px;font-weight:850;color:var(--mint);white-space:nowrap}.ka-algo-rank-empty{padding:18px;text-align:center;color:var(--muted);font-size:11px}.ka-algo-history-summary{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:10px;color:var(--muted)}.ka-algo-history-summary span:not(.tiny-tag){border:1px solid var(--line);border-radius:7px;padding:5px 7px}.ka-algo-hit{color:var(--mint);font-weight:850}.ka-algo-miss{color:var(--rose);font-weight:850}
 @media(max-width:760px){.ka-algo-results,.ka-algo-tools{grid-template-columns:minmax(0,1fr)}.ka-algo-rank-item{padding:10px}.ka-algo-history-summary{justify-content:flex-start}.ka-algo-live{padding:14px}.ka-algo-toolbar{align-items:flex-start}.ka-algo-toolbar h3{font-size:20px}.ka-algo-pick{padding:12px}.ka-algo-picks{grid-template-columns:.85fr 1.15fr}.ka-algo-pick strong{font-size:25px}.ka-algo-live-main{gap:13px}.ka-algo-sum strong{font-size:29px}.ka-algo-controls{align-items:stretch}.ka-algo-controls .btn-primary{padding:10px}.ka-algo-toolbar .btn-secondary{white-space:nowrap}}
 
 
@@ -609,7 +609,7 @@ button{-webkit-tap-highlight-color:transparent;transition:background .18s ease,b
       </div>
       <div class="grid ka-algo-tools">
         <article class="card"><div class="card-head"><div><h4>算法参数</h4><p>手动调整区间，或扫描当前样本的较优区间</p></div></div><div class="card-body"><label class="ka-algo-label" for="kaAlgoRangeSelect">杀组随机区间</label><div class="ka-algo-controls"><select id="kaAlgoRangeSelect" class="glass-select"></select><button type="button" class="btn-primary" id="kaAlgoApplyRange">应用区间</button></div><label class="ka-algo-label">滚动回测窗口</label><div id="kaAlgoBacktest" class="choice-row ka-algo-backtest"><button class="choice" data-algo-period="10">10 期</button><button class="choice active" data-algo-period="20">20 期</button><button class="choice" data-algo-period="30">30 期</button><button class="choice" data-algo-period="50">50 期</button></div><button type="button" class="btn-secondary ka-algo-scan-btn" id="kaAlgoScan">⟳ 自动调节区间</button><div id="kaAlgoProgressWrap" class="ka-algo-progress-wrap" hidden><div class="ka-algo-progress"><span id="kaAlgoProgress"></span></div><small id="kaAlgoProgressText">正在扫描…</small></div><div id="kaAlgoMessage" class="ka-algo-message" role="status"></div></div></article>
-        <article class="card"><div class="card-head"><div><h4>计算过程</h4><p>查看本期输入、随机区间与联动裁决</p></div><button type="button" class="btn-secondary" id="kaAlgoCopy">复制结果</button></div><div class="card-body"><div id="kaAlgoSteps" class="ka-algo-steps">等待开奖数据后自动生成。</div></div></article>
+
       </div>
       <article class="card ka-algo-rank-card"><div class="card-head"><div><h4>区间准确率排行榜</h4><p id="kaAlgoRankCaption">按当前滚动回测窗口统计，点击任一区间即可应用</p></div><span class="tiny-tag">TOP 5</span></div><div class="card-body"><div id="kaAlgoRankList" class="ka-algo-rank-list"><div class="ka-algo-rank-empty">等待开奖数据</div></div></div></article>
       <article class="card ka-algo-history-card"><div class="card-head"><div><h4>最近回测明细</h4><p>逐期使用当时之前的数据计算，分别显示杀中与双中</p></div><div class="ka-algo-history-summary"><span id="kaAlgoKillHitSummary">杀中 —</span><span id="kaAlgoDoubleHitSummary">双中 —</span><span class="tiny-tag" id="kaAlgoHistoryCount">0 条</span></div></div><div class="table-wrap"><table><thead><tr><th>期号</th><th>实际开奖</th><th>杀组参考</th><th>双组推荐</th><th>杀中</th><th>双中</th></tr></thead><tbody id="kaAlgoHistoryRows"><tr><td colspan="6">等待历史数据</td></tr></tbody></table></div></article>
@@ -694,7 +694,7 @@ button{-webkit-tap-highlight-color:transparent;transition:background .18s ease,b
  回测 
 <div class="card">
 <div class="rank-h">
-<h3>📜 投票结论 · 近 50 期回测</h3>
+<h3>📜 投票结论 · 近 50 期回测</h3><p class="kv-status-copy">和值 13/14 作为特殊期展示，不计入命中率分母。</p>
 <span class="bd" id="kv_voteAcc">--</span>
 </div>
 <div class="tbl"><table>
@@ -782,7 +782,6 @@ button{-webkit-tap-highlight-color:transparent;transition:background .18s ease,b
   $('#soundBtn').addEventListener('click',async()=>{drawSoundEnabled=!drawSoundEnabled;const b=$('#soundBtn');b.textContent=drawSoundEnabled?'🔔 提示音：开':'🔕 提示音：关';b.classList.toggle('is-on',drawSoundEnabled);b.setAttribute('aria-pressed',String(drawSoundEnabled));if(drawSoundEnabled){try{const AC=window.AudioContext||window.webkitAudioContext;if(AC){drawAudioContext=drawAudioContext||new AC();await drawAudioContext.resume();showToast('提示音已开启：新期开奖时叮叮叮');}else{drawSoundEnabled=false;b.textContent='🔕 提示音：关';b.classList.remove('is-on');b.setAttribute('aria-pressed','false');showToast('当前浏览器不支持提示音');}}catch(_){showToast('提示音已开启；请检查手机媒体音量');}}else{showToast('开奖提示音已关闭');}});
   function nav(page){currentPage=page;$$('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));$$('.section').forEach(s=>s.classList.toggle('active',s.id==='page-'+page));$('#crumb').textContent=({overview:'数据总览',model:'模型实验室',history:'历史记录',trends:'走势分析',missing:'遗漏统计',streaks:'连长龙检测'})[page];if(page==='overview'){const current=records.length?mergeKenoForRecord(records[records.length-1]):null;if(current)resultMarkup(current);if(current&&!validKeno20(current.keno))loadLiveData({includeHistory:false,silent:true,retryKeno:true});makeLineChart($('#trendSvg'),records.slice(-Number($('#overviewWindow')?.value||50)));renderTheoryBars();renderCategories();renderShapeDistribution()}if(page==='history')applyFilters();if(page==='model')runModel();if(page==='trends')renderTrends();if(page==='missing')renderMissing();if(page==='streaks')renderStreaks();window.scrollTo({top:0,behavior:'smooth'})}
   $$('[data-page]').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.page)));$$('[data-go]').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.go)));
-  function formatDrawTime(value){if(!value)return '时间未提供';const d=new Date(String(value).includes('T')?value.replace(' ','T')+'+08:00':String(value).replace(' ','T')+'+08:00');return Number.isNaN(d.getTime())?String(value):d.toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});}
   function setCountdownFromApi(data,drawOverride=null){
     const cd=data?.countdown||{};
     const rawSec=cd.seconds;
@@ -962,7 +961,7 @@ button{-webkit-tap-highlight-color:transparent;transition:background .18s ease,b
   function applyFilters(){let period=$('#fPeriod').value.trim(),min=$('#fMin').value,max=$('#fMax').value,size=$('#fSize').value,odd=$('#fOdd').value;filtered=records.filter(r=>(!period||String(r.id).includes(period))&&(min===''||r.sum>=Number(min))&&(max===''||r.sum<=Number(max))&&(!size||r.size===size)&&(!odd||r.odd===odd)).slice().reverse();historyPage=1;renderHistory()}
   function renderHistory(){let total=filtered.length,pages=Math.max(1,Math.ceil(total/pageSize));historyPage=clamp(historyPage,1,pages);let chunk=filtered.slice((historyPage-1)*pageSize,historyPage*pageSize);$('#historyRows').innerHTML=chunk.map(rowHTML).join('')||'<tr><td colspan="10" style="text-align:center;padding:28px;color:#8fa1b4">没有符合条件的记录</td></tr>';$('#historyCount').textContent=`${total} 条`;$('#historySummary').textContent=`筛选后 ${total} 条 · 已载入 API 历史 ${records.length} 条`;$('#pageInfo').textContent=`第 ${historyPage} / ${pages} 页 · 每页 ${pageSize} 条`;$('#prevPage').disabled=historyPage<=1;$('#nextPage').disabled=historyPage>=pages}
   $('#applyFilter').addEventListener('click',applyFilters);$('#fPeriod').addEventListener('keydown',e=>{if(e.key==='Enter')applyFilters()});$('#clearFilter').addEventListener('click',()=>{$('#fPeriod').value='';$('#fMin').value='';$('#fMax').value='';$('#fSize').value='';$('#fOdd').value='';applyFilters();showToast('筛选条件已清空')});$('#prevPage').addEventListener('click',()=>{historyPage--;renderHistory()});$('#nextPage').addEventListener('click',()=>{historyPage++;renderHistory()});
-  function exportCSV(){let arr=currentPage==='history'?filtered:records.slice().reverse();if(!arr.length){showToast('没有可导出的记录');return}let lines=[['期号','开奖日期','开奖时间','数字1','数字2','数字3','和值','大小','单双','龙虎','边数','极小极大','组合','形态','数据来源'],...arr.map(r=>[r.id,(r.time||'').slice(0,10),(r.time||'').slice(11,19),...r.digits,r.sum,r.size,r.odd,r.dragon||classifyDragon(r.digits),r.edge||classifyEdge(r.sum),r.extreme||classifyExtreme(r.sum)||'普通',r.combo,r.shape||classifyShape(r.digits),'第三方开奖API'])];let csv='\uFEFF'+lines.map(row=>row.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\r\n');let blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='28lab-canada28-history.csv';a.click();URL.revokeObjectURL(url);showToast(`已导出 ${arr.length} 条 CSV`)}
+  function exportCSV(){let arr=currentPage==='history'?filtered:records.slice().reverse();if(!arr.length){showToast('没有可导出的记录');return}let lines=[['期号','开奖日期','开奖时间','数字1','数字2','数字3','和值','大小','单双','龙虎','边数','极小极大','组合','形态','数据来源'],...arr.map(r=>[r.id,(r.time||'').slice(0,10),(r.time||'').slice(11,19),...r.digits,r.sum,r.size,r.odd,r.dragon||classifyDragon(r.digits),r.edge||classifyEdge(r.sum),r.extreme||classifyExtreme(r.sum)||'普通',r.combo,r.shape||classifyShape(r.digits),'第三方开奖API'])];let csv='\uFEFF'+lines.map(row=>row.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\r\n');let blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='28lab-canada28-history.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);showToast(`已导出 ${arr.length} 条 CSV`)}
   $('#exportBtn').addEventListener('click',exportCSV);$('#exportTop').addEventListener('click',exportCSV);
   function getWindow(){let n=Number($('#windowRange').value);return records.slice(-n)}
   $('#windowRange').addEventListener('input',()=>{$('#windowOut').value=$('#windowRange').value+' 期';runModel()});$('#smoothRange').addEventListener('input',()=>{$('#smoothOut').value=$('#smoothRange').value;runModel()});
@@ -1003,7 +1002,7 @@ button{-webkit-tap-highlight-color:transparent;transition:background .18s ease,b
   function renderTrends(){let arr=records.slice(-trendN),cnt=sumCounts(arr);$('#longTrendTitle').textContent=`和值序列 · 最近 ${arr.length} 期`;makeLineChart($('#longTrendSvg'),arr);$('#histBars').innerHTML=Array.from({length:28},(_,i)=>{let max=Math.max(...cnt,1),h=4+cnt[i]/max*70;return`<div class="bar-col"><span class="bar-val">${cnt[i]}</span><div class="bar" style="height:${h}%" title="和值 ${i}：${cnt[i]} 次；样本 ${(cnt[i]/arr.length*100).toFixed(1)}%"></div><span class="bar-label">${i}</span></div>`}).join('');let combos=countBy(arr,'combo');$('#trendMetrics').innerHTML=[['小单',combos['小单']||0],['小双',combos['小双']||0],['大单',combos['大单']||0],['大双',combos['大双']||0]].map(([l,v])=>metricLine(l,v,arr.length)).join('');let c=cnt,sd=Math.sqrt(arr.reduce((s,r)=>s+(r.sum-mean(arr))**2,0)/arr.length);let maxVal=Math.max(...c),maxSum=c.indexOf(maxVal);$('#trendSummary').innerHTML=[['和值均值',fmt(mean(arr),2)],['和值标准差',fmt(sd,2)],['最高频和值',maxSum],['该和值次数',maxVal]].map(([l,v])=>`<div class="card stat-card"><div class="stat-label">${l}</div><div class="stat-value" style="font-size:21px">${v}</div><div class="stat-sub">最近 ${arr.length} 期样本</div></div>`).join('')}
   $$('#trendChoices .choice').forEach(b=>b.addEventListener('click',()=>{$$('#trendChoices .choice').forEach(x=>x.classList.toggle('active',x===b));trendN=Number(b.dataset.n);renderTrends()}));
   function omissions(arr){let out=[];for(let s=0;s<=27;s++){let last=-1;for(let i=arr.length-1;i>=0;i--)if(arr[i].sum===s){last=arr.length-1-i;break}out.push({value:s,miss:last<0?arr.length:last})}return out}
-  function renderMissing(){const arr=records,data=omissions(arr);if(missMode==='all'){$('#missingTitle').textContent='各和值当前遗漏';$('#missingGrid').innerHTML=data.map(o=>`<div class="missing-tile ${o.miss>=20?'hot':''}"><div class="digit">${o.value}</div><small>遗漏 ${o.miss} 期</small></div>`).join('')}else{let sets=[];if(missMode==='traits'){const comb=countBy(arr,'combo'),sz=countBy(arr,'size'),odd=countBy(arr,'odd');sets=[['小单',comb['小单']||0],['小双',comb['小双']||0],['大单',comb['大单']||0],['大双',comb['大双']||0],['小',sz['小']||0],['大',sz['大']||0],['单',odd['单']||0],['双',odd['双']||0]]}else if(missMode==='dragonEdge'){const d=countBy(arr,r=>r.dragon||classifyDragon(r.digits)),e=countBy(arr,r=>r.edge||classifyEdge(r.sum));sets=[['龙',d['龙']||0],['虎',d['虎']||0],['和',d['和']||0],['小边',e['小边']||0],['中边',e['中边']||0],['大边',e['大边']||0]]}else{const sh=countBy(arr,r=>r.shape||classifyShape(r.digits));sets=[['极小',arr.filter(r=>r.sum<=5).length],['极大',arr.filter(r=>r.sum>=22).length],...['对子','顺子','杂六','豹子'].map(k=>[k,sh[k]||0])]}$('#missingTitle').textContent=missMode==='traits'?'分类属性样本计数':missMode==='dragonEdge'?'龙虎与边数样本计数':'特殊形态样本计数';$('#missingGrid').innerHTML=sets.map(([v,c])=>`<div class="missing-tile"><div class="digit">${v}</div><small>${c} 次 · ${(arr.length?c/arr.length*100:0).toFixed(1)}%</small></div>`).join('')}let recent=records.slice(-50),counts=sumCounts(recent);$('#missingRecentMetrics').innerHTML=[...counts.map((v,i)=>({i,v})).sort((a,b)=>b.v-a.v).slice(0,8)].map(o=>metricLine('和值 '+o.i,o.v,50)).join('')}
+  function renderMissing(){const arr=records,data=omissions(arr);if(missMode==='all'){$('#missingTitle').textContent='各和值当前遗漏';$('#missingGrid').innerHTML=data.map(o=>`<div class="missing-tile ${o.miss>=20?'hot':''}"><div class="digit">${o.value}</div><small>遗漏 ${o.miss} 期</small></div>`).join('')}else{let sets=[];if(missMode==='traits'){const comb=countBy(arr,'combo'),sz=countBy(arr,'size'),odd=countBy(arr,'odd');sets=[['小单',comb['小单']||0],['小双',comb['小双']||0],['大单',comb['大单']||0],['大双',comb['大双']||0],['小',sz['小']||0],['大',sz['大']||0],['单',odd['单']||0],['双',odd['双']||0]]}else if(missMode==='dragonEdge'){const d=countBy(arr,r=>r.dragon||classifyDragon(r.digits)),e=countBy(arr,r=>r.edge||classifyEdge(r.sum));sets=[['龙',d['龙']||0],['虎',d['虎']||0],['和',d['和']||0],['小边',e['小边']||0],['中边',e['中边']||0],['大边',e['大边']||0]]}else{const sh=countBy(arr,r=>r.shape||classifyShape(r.digits));sets=[['极小',arr.filter(r=>r.sum<=5).length],['极大',arr.filter(r=>r.sum>=22).length],...['对子','顺子','杂六','豹子'].map(k=>[k,sh[k]||0])]}$('#missingTitle').textContent=missMode==='traits'?'分类属性样本计数':missMode==='dragonEdge'?'龙虎与边数样本计数':'特殊形态样本计数';$('#missingGrid').innerHTML=sets.map(([v,c])=>`<div class="missing-tile"><div class="digit">${v}</div><small>${c} 次 · ${(arr.length?c/arr.length*100:0).toFixed(1)}%</small></div>`).join('')}let recent=records.slice(-50),counts=sumCounts(recent);$('#missingRecentMetrics').innerHTML=[...counts.map((v,i)=>({i,v})).sort((a,b)=>b.v-a.v).slice(0,8)].map(o=>metricLine('和值 '+o.i,o.v,recent.length)).join('')}
   $$('#missChoices .choice').forEach(b=>b.addEventListener('click',()=>{$$('#missChoices .choice').forEach(x=>x.classList.toggle('active',x===b));missMode=b.dataset.miss;renderMissing()}));
   function series(key){return records.map(r=>typeof key==='function'?key(r):r[key])}
   function streakStats(arr,getVal){const vals=arr.map(getVal);let groups=[],start=0;for(let i=1;i<=vals.length;i++){if(i===vals.length||vals[i]!==vals[start]){groups.push({value:vals[start],len:i-start,start,end:i-1});start=i}}let cur=groups[groups.length-1]||{value:'—',len:0};let maxBy={};groups.forEach(g=>{if(!maxBy[g.value]||g.len>maxBy[g.value].len)maxBy[g.value]=g});let maxGroup=groups.reduce((a,b)=>b.len>a.len?b:a,{len:0});return{current:cur,groups,maxBy,maxGroup}}
@@ -1016,13 +1015,23 @@ button{-webkit-tap-highlight-color:transparent;transition:background .18s ease,b
     let ownsHistoryLock=false, ownsLiveLock=true;
     const status=$('#apiStatus'),previousRecords=records.slice();
     if(!silent)status.innerHTML='<i class="live-dot"></i> 正在同步开奖与历史';
-    async function getJSON(url){const controller=new AbortController();const timeout=window.setTimeout(()=>controller.abort(),10000);let res;try{res=await fetch(url,{cache:'no-store',signal:controller.signal,headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}})}catch(err){if(err&&err.name==='AbortError')throw new Error('请求超时（10 秒），自动刷新会继续重试');throw err}finally{window.clearTimeout(timeout)}let json;try{json=await res.json()}catch(_){throw new Error('HTTP '+res.status+'：接口没有返回有效 JSON')}if(!res.ok||json.ok===false)throw new Error('HTTP '+res.status+'：'+(json.error?.message||json.error?.code||'请求失败'));return json}
+    async function getJSON(url){
+      const controller=new AbortController(),timeout=window.setTimeout(()=>controller.abort(),10000);
+      try{
+        const res=await fetch(url,{cache:'no-store',signal:controller.signal,headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}});
+        let json;
+        try{json=await res.json()}catch(err){if(err&&err.name==='AbortError')throw err;throw new Error('HTTP '+res.status+'：接口没有返回有效 JSON')}
+        if(!res.ok||json.ok===false)throw new Error('HTTP '+res.status+'：'+(json.error?.message||json.error?.code||'请求失败'));
+        return json;
+      }catch(err){if(err&&err.name==='AbortError')throw new Error('请求超时（10 秒），自动刷新会继续重试');throw err}
+      finally{window.clearTimeout(timeout)}
+    }
     const parseKeno=value=>{if(typeof value==='string'){const trimmed=value.trim();if(!trimmed)return[];try{value=JSON.parse(trimmed)}catch(_){value=trimmed.split(/[\s,，;；|]+/).filter(Boolean)}}if(value&&typeof value==='object'&&!Array.isArray(value)){value=value.numbers??value.items??value.balls??value.drawn_numbers??value.keno??value.data??[]}if(!Array.isArray(value))return[];const nums=value.map(v=>Number(typeof v==='object'&&v!==null?(v.number??v.n??v.value??v.ball):v)).filter(v=>Number.isInteger(v)&&v>=1&&v<=80);return nums.length===20&&new Set(nums).size===20?nums:[]};
-    const mapDraw=d=>{const a=Number(d.n1),b=Number(d.n2),c=Number(d.n3),sum=Number.isFinite(Number(d.sum))?Number(d.sum):a+b+c;const rawKeno=d.keno??d.keno20??d.keno_20??d.keno_numbers??d.kenoNumbers??d.original_keno??d.originalKeno??d.keno_balls??d.kenoBalls??d.keno_draw??d.kenoDraw??d.original_numbers??d.originalNumbers??d.numbers20??d.data?.keno??d.result?.keno;const parsed=parseKeno(rawKeno);const keno=validKeno20(parsed)?parsed:cachedKeno(d.nbr??d.id);return enrichRecord({id:String(d.nbr??d.id??''),digits:[a,b,c],sum,size:sum<=13?'小':'大',odd:sum%2?'单':'双',combo:(sum<=13?'小':'大')+(sum%2?'单':'双'),time:String(d.time||''),shape:classifyShape([a,b,c]),apiShape:String(d.shape||''),dragon:classifyDragon([a,b,c]),position:String(d.pos||''),source:'API',keno})};
+    const mapDraw=d=>{const a=Number(d.n1),b=Number(d.n2),c=Number(d.n3),rawSum=d.sum,sum=rawSum!==null&&rawSum!==undefined&&rawSum!==''&&Number.isFinite(Number(rawSum))?Number(rawSum):a+b+c;const rawKeno=d.keno??d.keno20??d.keno_20??d.keno_numbers??d.kenoNumbers??d.original_keno??d.originalKeno??d.keno_balls??d.kenoBalls??d.keno_draw??d.kenoDraw??d.original_numbers??d.originalNumbers??d.numbers20??d.data?.keno??d.result?.keno;const parsed=parseKeno(rawKeno);const keno=validKeno20(parsed)?parsed:cachedKeno(d.nbr??d.id);return enrichRecord({id:String(d.nbr??d.id??''),digits:[a,b,c],sum,size:sum<=13?'小':'大',odd:sum%2?'单':'双',combo:(sum<=13?'小':'大')+(sum%2?'单':'双'),time:String(d.time||''),shape:classifyShape([a,b,c]),apiShape:String(d.shape||''),dragon:classifyDragon([a,b,c]),position:String(d.pos||''),source:'API',keno})};
     try{
       const latestUrl='https://pc28.world/api/v1/draws/latest?_ts='+Date.now();const latestJson=await getJSON(latestUrl),latestDraw=latestJson.data?.draw;
       if(!latestDraw||latestDraw.nbr==null)throw new Error('最新开奖响应缺少 data.draw/nbr 字段');
-      const latest=mapDraw(latestDraw);if(!latest.digits.every(n=>Number.isInteger(n)&&n>=0&&n<=9))throw new Error('最新开奖的号码字段无效');
+      const latest=mapDraw(latestDraw);if(!latest.digits.every(n=>Number.isInteger(n)&&n>=0&&n<=9))throw new Error('最新开奖的号码字段无效');if(!Number.isInteger(latest.sum)||latest.sum<0||latest.sum>27||latest.digits.reduce((sum,n)=>sum+n,0)!==latest.sum)throw new Error('最新开奖的和值与三个号码不一致，已忽略本次异常响应');
       // 先合并同一期缓存，不能用 API 返回的 null/空数组覆盖已验证 Keno。
       const cachedSame=records.find(r=>String(r.id)===String(latest.id));
       if(validKeno20(latest.keno))rememberKeno(latest.id,latest.keno);
@@ -1051,10 +1060,9 @@ button{-webkit-tap-highlight-color:transparent;transition:background .18s ease,b
         const sameIndex=records.findIndex(r=>String(r.id)===String(latest.id));
         let kenoUpdated=false;
         if(sameIndex>=0&&validKeno20(latest.keno)&&!validKeno20(records[sameIndex].keno)){records[sameIndex]={...records[sameIndex],keno:latest.keno.slice()};rememberKeno(latest.id,latest.keno);kenoUpdated=true;}
-        runModel();
         const now=new Date(),stamp=now.toLocaleTimeString();lastSyncAt=now;
         if($('#metaUpdatedAt'))$('#metaUpdatedAt').textContent=lastSyncAt.toLocaleString('zh-CN',{hour12:false});
-        renderCategories();renderShapeDistribution();updateDrawMetaNext();
+        updateDrawMetaNext();
         if(kenoUpdated){const current=latest();if(current)resultMarkup(current);}
         status.innerHTML=historyPartial?`<i class="live-dot" style="background:#f0b85a"></i> 最新开奖已连接 · 历史部分可用 · ${stamp}`:`<i class="live-dot"></i> 自动同步已开启 · 3 秒 · ${stamp}`;
         status.title='最近一次 API 检查：'+stamp+'；最新开奖接口每 3 秒轮询。';return;
@@ -1070,7 +1078,7 @@ button{-webkit-tap-highlight-color:transparent;transition:background .18s ease,b
       }
       if(reloadHistory&&items.length){
         const byId=new Map();
-        for(const d of items){if(!d||d.nbr==null)continue;const r=mapDraw(d);if(r.digits.every(n=>Number.isInteger(n)&&n>=0&&n<=9)){const cached=records.find(old=>String(old.id)===String(r.id));if(validKeno20(r.keno))rememberKeno(r.id,r.keno);if(!validKeno20(r.keno)){const keep=validKeno20(cached?.keno)?cached.keno:cachedKeno(r.id);if(validKeno20(keep))r.keno=keep.map(Number)}byId.set(r.id,r)}}
+        for(const d of items){if(!d||d.nbr==null)continue;const r=mapDraw(d);if(r.digits.every(n=>Number.isInteger(n)&&n>=0&&n<=9)&&Number.isInteger(r.sum)&&r.sum>=0&&r.sum<=27&&r.digits.reduce((sum,n)=>sum+n,0)===r.sum){const cached=records.find(old=>String(old.id)===String(r.id));if(validKeno20(r.keno))rememberKeno(r.id,r.keno);if(!validKeno20(r.keno)){const keep=validKeno20(cached?.keno)?cached.keno:cachedKeno(r.id);if(validKeno20(keep))r.keno=keep.map(Number)}byId.set(r.id,r)}}
         // 保留分页期间新一轮轮询得到的数据；并将已验证的 Keno 20 球与历史/最新响应合并，禁止空字段覆盖有效值。
         for(const r of records){const incoming=byId.get(String(r.id));if(incoming&&validKeno20(incoming.keno)&&!validKeno20(r.keno))byId.set(r.id,{...r,keno:incoming.keno.slice()});else if(!incoming)byId.set(r.id,r);else byId.set(r.id,mergeKenoForRecord(r));}
         const knownLatest=records.length?records[records.length-1]:null;
@@ -1107,9 +1115,10 @@ button{-webkit-tap-highlight-color:transparent;transition:background .18s ease,b
 (function(){
   const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const nav=document.querySelector('.mobile-nav');
+  const navButtons=nav?[...nav.querySelectorAll('button[data-page]')]:[];
   function syncNav(){
     if(!nav)return;
-    const buttons=[...nav.querySelectorAll('button[data-page]')];
+    const buttons=navButtons;
     if(!buttons.length)return;
     let active=buttons.findIndex(b=>b.classList.contains('active'));
     if(active<0)active=0;
@@ -1138,7 +1147,7 @@ button{-webkit-tap-highlight-color:transparent;transition:background .18s ease,b
     if('ResizeObserver' in window){
       const navResizeObserver=new ResizeObserver(scheduleNavSync);
       navResizeObserver.observe(nav);
-      buttons.forEach(button=>navResizeObserver.observe(button));
+      navButtons.forEach(button=>navResizeObserver.observe(button));
     }
     if(document.fonts&&document.fonts.ready)document.fonts.ready.then(scheduleNavSync);
   }
@@ -1166,8 +1175,8 @@ const THREE_RULES={same:{'小双':['小双','大双','大单'],'小单':['小单
 const PERIODS={short:{name:'10期短期',val:10},mid:{name:'20期中期',val:20},long:{name:'50期长期',val:50}};
 const SP={'月':[9,12,15,18],'之':[7,10,16,19],'眼':[8,11,17,20]};
 const STORAGE_PERFECT='ka28_algo_one_perfect', STORAGE_RANGE='ka28_algo_one_range';
-let globalHistory=[], killCurRange={min:.25,max:.45}, backtestPeriod=20, killSwitchCount=0, isPerfectMode=false, threeCurKey='mid', threeCurRange={min:.25,max:.55}, opened=false, lastSignature='', rankCacheKey='', rankCache=[], autoScanKey='', scanning=false;
-try{const saved=JSON.parse(localStorage.getItem(STORAGE_RANGE)||'null');if(saved&&Number.isFinite(saved.min)&&Number.isFinite(saved.max)&&saved.min<saved.max)killCurRange=saved;}catch(_){}
+let globalHistory=[], killCurRange={min:.25,max:.45}, backtestPeriod=20, killSwitchCount=0, isPerfectMode=false, perfectFingerprint='', perfectPeriod=0, threeCurKey='mid', threeCurRange={min:.25,max:.55}, opened=false, lastSignature='', rankCacheKey='', rankCache=[], autoScanKey='', scanning=false, scanCancelRequested=false, scanHideTimer=0;
+try{const saved=JSON.parse(localStorage.getItem(STORAGE_RANGE)||'null');if(saved&&Number.isFinite(saved.min)&&Number.isFinite(saved.max)&&saved.min>=0&&saved.max<=1&&saved.min<saved.max)killCurRange={min:Number(saved.min),max:Number(saved.max)};}catch(_){}
 try{const n=Number(localStorage.getItem('ka28_algo_one_backtest'));if([10,20,30,50].includes(n))backtestPeriod=n;}catch(_){}
 function getTypeFromSum(sum){return (sum<14?'小':'大')+(sum%2===0?'双':'单')}
 function mulberry32(seed){let s=seed;return ()=>{s=(s|0)+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,s|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296}}
@@ -1177,19 +1186,20 @@ function splitAndSum(num){let s=0;const str=String(num).replace('.','');for(cons
 function predictWithRange(nums,expect,sum,type,range){const rnd=mulberry32(parseInt(expect,10)||0);const rand=Number((rnd()*(range.max-range.min)+range.min).toFixed(8));const prod=rand*sum;const finalSum=splitAndSum(prod.toFixed(3));const finalType=getTypeFromSum(finalSum);const rd=rand.toFixed(8).split('.')[1].slice(0,3);const rdSum=splitAndSum(rd);const sameSeq=isSameSequence(rdSum,sum);const groups=sameSeq?COMBINATION_RULES.sameSequence[finalType]:COMBINATION_RULES.diffSequence[finalType];for(const t of ALL_TYPES)if(!groups.includes(t))return {killGroup:t,randomNum:rand,product:prod,finalSum,finalType,randFirstThree:rd,randSum:rdSum,sameSeq};return {killGroup:'大双',randomNum:rand,product:prod,finalSum,finalType,randFirstThree:rd,randSum:rdSum,sameSeq}}
 function generateUltraRangePool(){const pool=[];for(let min=0;min<=.9;min+=.005)for(let max=min+.05;max<=Math.min(min+.5,1.001);max+=.005)pool.push({min:Number(min.toFixed(3)),max:Number(max.toFixed(3))});return pool}
 const ULTRA_RANGE_POOL=generateUltraRangePool();
-function calcRangeStats(range,history){if(!history||history.length<2)return {killMiss:0,killHit:0,total:0,hitRate:0};let miss=0,hit=0;const len=Math.min(backtestPeriod,history.length-1);for(let i=0;i<len;i++){const cur=history[i],prev=history[i+1];const res=predictWithRange(prev.nums,prev.expect,prev.sum,prev.type,range);const ok=(cur.sum===13||cur.sum===14)||cur.type!==res.killGroup;ok?hit++:miss++}return {killMiss:miss,killHit:hit,total:len,hitRate:len?hit/len*100:0}}
+function calcRangeStats(range,history){if(!history||history.length<2)return {killMiss:0,killHit:0,total:0,hitRate:0};let miss=0,hit=0;const len=Math.min(backtestPeriod,history.length-1);for(let i=0;i<len;i++){const cur=history[i],prev=history[i+1];if(!cur||!prev||cur.sum===13||cur.sum===14)continue;const res=predictWithRange(prev.nums,prev.expect,prev.sum,prev.type,range);if(cur.type!==res.killGroup)hit++;else miss++}const total=hit+miss;return {killMiss:miss,killHit:hit,total,hitRate:total?hit/total*100:0}}
 function threeGetType(s){return (s<14?'小':'大')+(s%2===0?'双':'单')}
 function threeMulberry(seed){let s=seed;return ()=>{s=(s|0)+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,s|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296}}
 function threeSeqIdx(n){const r=[];THREE_SEQUENCES.forEach((s,i)=>{if(s.includes(n))r.push(i)});return r}
 function threeSameSeq(a,b){const sa=threeSeqIdx(a),sb=threeSeqIdx(b);return sa.some(i=>sb.includes(i))}
 function threePredict(nums,expect,sum,typ,range){const safe=Array.isArray(nums)&&nums.length===3?nums:[0,0,0];const rnd=threeMulberry((parseInt(expect,10)||0)*1000+safe[0]*100+safe[1]*10+safe[2]);let finalRnd=rnd();for(let i=1;i<Math.max(...safe);i++)finalRnd=rnd();const rand=Number((finalRnd*(range.max-range.min)+range.min).toFixed(8));const prod=rand*(sum||0);const dec=(prod.toFixed(10).split('.')[1]||'000').slice(0,3).padEnd(3,'0');const decSum=dec.split('').map(Number).reduce((a,b)=>a+b,0);const hasMatch=dec.split('').some(d=>safe.includes(parseInt(d,10)));let groups=hasMatch?(threeSameSeq(decSum,sum||0)?THREE_RULES.same[typ]:THREE_RULES.diff[typ]):THREE_RULES.none[typ];if(!groups||groups.length!==3)groups=['小双','大双','大单'];return {groups,dec,decSum,hasMatch,sameSeq:threeSameSeq(decSum,sum||0)}}
 const THREE_POOL=[];for(let min=0;min<=.8;min+=.05)for(let max=min+.2;max<=Math.min(min+.5,1);max+=.05)THREE_POOL.push({min:Number(min.toFixed(2)),max:Number(max.toFixed(2))});
-function threeAccRange(range,hist,n){const max=Math.min(n,hist.length-1);let ok=0;for(let i=0;i<max;i++){const t=hist[i],p=hist[i+1],res=threePredict(p.nums,p.expect,p.sum,p.type,range);if(t.sum===13||t.sum===14||res.groups.includes(t.type))ok++}return {accuracy:max?Number((ok/max*100).toFixed(2)):0,correct:ok,total:max}}
+function threeAccRange(range,hist,n){const max=Math.min(n,hist.length-1);let ok=0,total=0;for(let i=0;i<max;i++){const t=hist[i],p=hist[i+1];if(!t||!p||t.sum===13||t.sum===14)continue;const res=threePredict(p.nums,p.expect,p.sum,p.type,range);total++;if(res.groups.includes(t.type))ok++}return {accuracy:total?Number((ok/total*100).toFixed(2)):0,correct:ok,total}}
 function threeBestRange(hist,key){const n=PERIODS[key].val;const res=THREE_POOL.map(r=>({range:r,...threeAccRange(r,hist,n)})).sort((a,b)=>b.correct-a.correct||b.accuracy-a.accuracy);return res[0]||{range:{min:.25,max:.55},accuracy:0,correct:0,total:0}}
 function threeRotate(hist){const periodRes={};Object.keys(PERIODS).forEach(k=>periodRes[k]=threeBestRange(hist,k));const sorted=Object.keys(periodRes).sort((a,b)=>periodRes[b].correct-periodRes[a].correct||periodRes[b].accuracy-periodRes[a].accuracy);const bestKey=sorted[0],best=periodRes[bestKey];let switched=false;if(bestKey!==threeCurKey||JSON.stringify(best.range)!==JSON.stringify(threeCurRange)){threeCurKey=bestKey;threeCurRange=best.range;switched=true}return {key:threeCurKey,range:threeCurRange,periodRes,switched}}
 function link(killType,threeGroups){return {finalKill:killType,double:threeGroups.filter(t=>t!==killType).slice(0,2)}}
 function specials(sum,double){let g=Object.entries(SP).find(([k,v])=>v.includes(sum))?.[0];if(!g){let min=Infinity;for(const [k,v] of Object.entries(SP))for(const n of v)if(Math.abs(n-sum)<min){min=Math.abs(n-sum);g=k}}const src=g==='月'?['月','之']:g==='之'?['之','眼']:['眼','月'];const set=new Set();double.forEach(t=>src.forEach(k=>SP[k].forEach(n=>{if(threeGetType(n)===t)set.add(n)})));let arr=Array.from(set).sort((a,b)=>a-b).slice(0,4);while(arr.length<4){const all=[...SP.月,...SP.之,...SP.眼];for(const n of all)if(!arr.includes(n)){arr.push(n);break}}return arr.map(n=>String(n).padStart(2,'0'))}
-function syncHistory(){try{const source=window.KA28GetRecords?.();if(!Array.isArray(source))return [];return source.slice().reverse().filter(r=>Array.isArray(r.digits)&&r.digits.length===3&&Number.isFinite(Number(r.sum))).map(r=>{const nums=r.digits.map(Number),sum=Number(r.sum);return {nums,sum,type:getTypeFromSum(sum),expect:String(r.id??r.period??''),id:String(r.id??''),time:r.time||''}})}catch(e){return []}}
+function syncHistory(){try{const source=window.KA28GetRecords?.();if(!Array.isArray(source))return [];return source.slice().reverse().filter(r=>{if(!Array.isArray(r.digits)||r.digits.length!==3)return false;const nums=r.digits.map(Number),sum=Number(r.sum);return nums.every(n=>Number.isInteger(n)&&n>=0&&n<=9)&&Number.isInteger(sum)&&sum>=0&&sum<=27&&nums.reduce((a,b)=>a+b,0)===sum}).map(r=>{const nums=r.digits.map(Number),sum=Number(r.sum);return {nums,sum,type:getTypeFromSum(sum),expect:String(r.id??r.period??''),id:String(r.id??''),time:r.time||''}})}catch(e){return []}}
+function historyFingerprint(){return globalHistory.map(h=>`${h.expect}:${h.nums.join('')}:${h.sum}`).join('|')}
 function text(id,value){const el=$(id);if(el)el.textContent=value==null?'':String(value)}
 function toast(msg){text('kaAlgoMessage',msg)}
 function renderHistory(){
@@ -1215,21 +1225,21 @@ function ensureRangeOption(range){
  sel.value=value;
 }
 function applyChosenRange(range,source='手动应用'){
- killCurRange={min:Number(range.min),max:Number(range.max)};killSwitchCount++;isPerfectMode=false;
+ killCurRange={min:Number(range.min),max:Number(range.max)};killSwitchCount++;isPerfectMode=false;perfectFingerprint='';perfectPeriod=0;
  try{localStorage.setItem(STORAGE_RANGE,JSON.stringify(killCurRange));localStorage.setItem('shuishen_range',JSON.stringify(killCurRange))}catch(_){}
- ensureRangeOption(killCurRange);render();renderRankList(true);toast(`${source}：${killCurRange.min.toFixed(3)} ~ ${killCurRange.max.toFixed(3)}`);
+ ensureRangeOption(killCurRange);render();renderRankList();toast(`${source}：${killCurRange.min.toFixed(3)} ~ ${killCurRange.max.toFixed(3)}`);
 }
 function renderRankList(force=false){
  const container=$('kaAlgoRankList');if(!container)return;
  if(globalHistory.length<2){container.innerHTML='<div class="ka-algo-rank-empty">至少需要两期开奖记录才能计算区间准确率</div>';return}
- const key=`${globalHistory[0].expect}|${globalHistory.length}|${backtestPeriod}`;
+ const key=`${historyFingerprint()}|${backtestPeriod}`;
  if(force||key!==rankCacheKey){
    const latest=globalHistory[0];
    rankCache=ULTRA_RANGE_POOL.map(range=>({range,stats:calcRangeStats(range,globalHistory),killGroup:predictWithRange(latest.nums,latest.expect,latest.sum,latest.type,range).killGroup}))
      .sort((a,b)=>b.stats.hitRate-a.stats.hitRate||((a.range.max-a.range.min)-(b.range.max-b.range.min))).slice(0,5);
    rankCacheKey=key;
  }
- text('kaAlgoRankCaption',`近 ${Math.min(backtestPeriod,globalHistory.length-1)} 期滚动回测 · 点击区间立即应用`);
+ text('kaAlgoRankCaption',`最近 ${Math.min(backtestPeriod,globalHistory.length-1)} 期窗口滚动回测（和值 13/14 不计分）· 点击区间立即应用`);
  container.innerHTML='';
  rankCache.forEach((item,i)=>{
    const range=item.range,active=Math.abs(range.min-killCurRange.min)<.0005&&Math.abs(range.max-killCurRange.max)<.0005;
@@ -1241,14 +1251,65 @@ function renderRankList(force=false){
 }
 
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function render(){globalHistory=syncHistory();if(!globalHistory.length){$('kaAlgoNoData').hidden=false;text('kaAlgoDataTag','等待数据');text('kaAlgoPeriod','等待 KA28 开奖数据');text('kaAlgoSum','—');text('kaAlgoType','等待数据');$('kaAlgoBalls').innerHTML='<span>—</span><i>+</i><span>—</span><i>+</i><span>—</span>';text('kaAlgoKill','—');text('kaAlgoDouble','—　—');text('kaAlgoSpecials','');text('kaAlgoSteps','暂无开奖记录，算法尚未运行。');return} $('kaAlgoNoData').hidden=true;const latest=globalHistory[0];text('kaAlgoDataTag',`${globalHistory.length} 期可用`);text('kaAlgoPeriod',`${latest.expect} 期`);$('kaAlgoBalls').innerHTML=latest.nums.map((n,i)=>`${i?'<i>+</i>':''}<span>${n}</span>`).join('');text('kaAlgoSum',latest.sum);text('kaAlgoType',latest.type);const kr=predictWithRange(latest.nums,latest.expect,latest.sum,latest.type,killCurRange),rot=threeRotate(globalHistory),three=threePredict(latest.nums,latest.expect,latest.sum,latest.type,rot.range),ln=link(kr.killGroup,three.groups),stat=calcRangeStats(killCurRange,globalHistory);text('kaAlgoKill',ln.finalKill);text('kaAlgoDouble',ln.double.join('　'));$('kaAlgoSpecials').innerHTML=specials(latest.sum,ln.double).map(n=>`<span class="${ln.double.includes(threeGetType(Number(n)))?'hit':''}">${n}</span>`).join('');text('kaAlgoRange',`${killCurRange.min.toFixed(3)} ~ ${killCurRange.max.toFixed(3)}`);text('kaAlgoAccuracy',`${stat.hitRate.toFixed(1)}% · ${stat.total}期`);text('kaAlgoThreePeriod',PERIODS[rot.key].name);text('kaAlgoThreeAccuracy',`${rot.periodRes[rot.key].accuracy}% · ${rot.periodRes[rot.key].total}期`);text('kaAlgoSwitchCount',killSwitchCount);text('kaAlgoSwitchInfo',rot.switched?'三门周期已更新':'三门周期稳定');text('kaAlgoMode',isPerfectMode?'扫描锁定':'常规模式');const special=latest.sum===13||latest.sum===14;$('kaAlgoSteps').textContent=[`【输入开奖】期号：${latest.expect} · 数字：${latest.nums.join(' + ')} · 和值：${latest.sum} · 类别：${latest.type}`,`【杀组算法】区间：${killCurRange.min.toFixed(3)} ~ ${killCurRange.max.toFixed(3)}`,`随机数：${kr.randomNum.toFixed(8)} · 乘积：${kr.product.toFixed(3)}`,`小数拆分和：${kr.randSum} · ${kr.sameSeq?'同序列':'不同序列'}`,`杀组计算：${kr.finalType} → ${kr.killGroup}`,`【三门算法】周期：${PERIODS[rot.key].name} · 区间：${rot.range.min.toFixed(2)} ~ ${rot.range.max.toFixed(2)}`,`三门池：${three.groups.join(' / ')} · 小数和：${three.decSum}`,`【联动裁决】杀组参考：${ln.finalKill} · 双组参考：${ln.double.join(' / ')}`,`【特码映射】${specials(latest.sum,ln.double).join(' · ')}`,`【滚动回测】杀组符合：${stat.hitRate.toFixed(1)}%（${stat.total} 期）${special?'\n提示：本期和值为 13/14，原算法回测将其按特殊期处理。':''}`].join('\n');renderHistory();renderRankList()}
-async function scanRange(){if(scanning)return;if(globalHistory.length<5){toast('开奖记录不足 5 期，暂时无法扫描。');return}scanning=true;const wrap=$('kaAlgoProgressWrap'),fill=$('kaAlgoProgress'),label=$('kaAlgoProgressText');wrap.hidden=false;fill.style.width='0%';$('kaAlgoScan').disabled=true;let best={hitRate:-1,range:killCurRange,hit:0,total:0};try{const testLen=Math.min(backtestPeriod,globalHistory.length-1),total=ULTRA_RANGE_POOL.length;for(let i=0;i<total;i++){const range=ULTRA_RANGE_POOL[i];let hit=0;for(let j=0;j<testLen;j++){const cur=globalHistory[j],prev=globalHistory[j+1],res=predictWithRange(prev.nums,prev.expect,prev.sum,prev.type,range);if(cur.sum===13||cur.sum===14||cur.type!==res.killGroup)hit++}const rate=testLen?hit/testLen*100:0;if(rate>best.hitRate||(rate===best.hitRate&&range.max-range.min<best.range.max-best.range.min))best={hitRate:rate,range,hit,total:testLen};if(i%200===0){fill.style.width=(i/total*100).toFixed(1)+'%';label.textContent=`扫描 ${i.toLocaleString()} / ${total.toLocaleString()} · 当前最高 ${Math.max(0,best.hitRate).toFixed(1)}%`;await new Promise(r=>setTimeout(r,0))}}killCurRange={...best.range};killSwitchCount++;isPerfectMode=best.hitRate>=100;try{localStorage.setItem(STORAGE_RANGE,JSON.stringify(killCurRange));localStorage.setItem(STORAGE_PERFECT,JSON.stringify({range:killCurRange,hitRate:best.hitRate,source:'KA28滚动扫描',timestamp:Date.now()}))}catch(_){}ensureRangeOption(killCurRange);fill.style.width='100%';label.textContent=`完成：${best.hitRate.toFixed(1)}%（${best.hit}/${best.total}）`;render();renderRankList(true);toast(`自动调节完成：当前样本杀中率 ${best.hitRate.toFixed(1)}%，已应用区间。`)}catch(e){console.error(e);toast('扫描遇到错误，请重试。')}finally{scanning=false;$('kaAlgoScan').disabled=false;setTimeout(()=>{wrap.hidden=true},2600)}}
+function render(){
+ globalHistory=syncHistory();
+ if(!globalHistory.length){$('kaAlgoNoData').hidden=false;text('kaAlgoDataTag','等待数据');text('kaAlgoPeriod','等待 KA28 开奖数据');text('kaAlgoSum','—');text('kaAlgoType','等待数据');$('kaAlgoBalls').innerHTML='<span>—</span><i>+</i><span>—</span><i>+</i><span>—</span>';text('kaAlgoKill','—');text('kaAlgoDouble','—　—');text('kaAlgoSpecials','');return}
+ const currentFingerprint=historyFingerprint();
+ if(isPerfectMode&&((perfectFingerprint&&perfectFingerprint!==currentFingerprint)||(perfectPeriod&&perfectPeriod!==backtestPeriod))){isPerfectMode=false;perfectFingerprint='';perfectPeriod=0}
+ if(!isPerfectMode){
+  try{
+   const saved=JSON.parse(localStorage.getItem(STORAGE_PERFECT)||'null');
+   if(saved&&saved.fingerprint===currentFingerprint&&saved.period===backtestPeriod&&saved.range&&Math.abs(Number(saved.range.min)-killCurRange.min)<1e-8&&Math.abs(Number(saved.range.max)-killCurRange.max)<1e-8&&Number(saved.hitRate)>=100&&Number(saved.total)>0){isPerfectMode=true;perfectFingerprint=currentFingerprint;perfectPeriod=backtestPeriod}
+   else if(saved&&(!saved.fingerprint||saved.fingerprint!==currentFingerprint||saved.period!==backtestPeriod)){localStorage.removeItem(STORAGE_PERFECT)}
+  }catch(_){}
+ }
+ $('kaAlgoNoData').hidden=true;const latest=globalHistory[0];text('kaAlgoDataTag',`${globalHistory.length} 期可用`);text('kaAlgoPeriod',`${latest.expect} 期`);$('kaAlgoBalls').innerHTML=latest.nums.map((n,i)=>`${i?'<i>+</i>':''}<span>${n}</span>`).join('');text('kaAlgoSum',latest.sum);text('kaAlgoType',latest.type);const kr=predictWithRange(latest.nums,latest.expect,latest.sum,latest.type,killCurRange),rot=threeRotate(globalHistory),three=threePredict(latest.nums,latest.expect,latest.sum,latest.type,rot.range),ln=link(kr.killGroup,three.groups),stat=calcRangeStats(killCurRange,globalHistory);text('kaAlgoKill',ln.finalKill);text('kaAlgoDouble',ln.double.join('　'));$('kaAlgoSpecials').innerHTML=specials(latest.sum,ln.double).map(n=>`<span class="${ln.double.includes(threeGetType(Number(n)))?'hit':''}">${n}</span>`).join('');text('kaAlgoRange',`${killCurRange.min.toFixed(3)} ~ ${killCurRange.max.toFixed(3)}`);text('kaAlgoAccuracy',`${stat.hitRate.toFixed(1)}% · ${stat.total}个有效样本`);text('kaAlgoThreePeriod',PERIODS[rot.key].name);text('kaAlgoThreeAccuracy',`${rot.periodRes[rot.key].accuracy}% · ${rot.periodRes[rot.key].total}个有效样本`);text('kaAlgoSwitchCount',killSwitchCount);text('kaAlgoSwitchInfo',rot.switched?'三门周期已更新':'三门周期稳定');text('kaAlgoMode',isPerfectMode?'样本满分':'常规模式');renderHistory();renderRankList()}
+async function scanRange(){
+ if(scanning)return;
+ if(!opened){toast('请先打开独家算法页面再扫描。');return}
+ if(globalHistory.length<5){toast('开奖记录不足 5 期，暂时无法扫描。');return}
+ scanning=true;scanCancelRequested=false;clearTimeout(scanHideTimer);
+ const wrap=$('kaAlgoProgressWrap'),fill=$('kaAlgoProgress'),label=$('kaAlgoProgressText');
+ if(!wrap||!fill||!label){scanning=false;return}
+ wrap.hidden=false;fill.style.width='0%';$('kaAlgoScan').disabled=true;
+ let best={hitRate:-1,range:killCurRange,hit:0,total:0},cancelled=false;
+ try{
+  const testLen=Math.min(backtestPeriod,globalHistory.length-1),poolSize=ULTRA_RANGE_POOL.length;
+  for(let i=0;i<poolSize;i++){
+   if(scanCancelRequested||!opened){cancelled=true;break}
+   const range=ULTRA_RANGE_POOL[i];let hit=0,scored=0;
+   for(let j=0;j<testLen;j++){
+    if(scanCancelRequested||!opened){cancelled=true;break}
+    const cur=globalHistory[j],prev=globalHistory[j+1];
+    if(!cur||!prev||cur.sum===13||cur.sum===14)continue;
+    const res=predictWithRange(prev.nums,prev.expect,prev.sum,prev.type,range);scored++;
+    if(cur.type!==res.killGroup)hit++;
+   }
+   if(cancelled)break;
+   const rate=scored?hit/scored*100:0;
+   if(rate>best.hitRate||(rate===best.hitRate&&range.max-range.min<best.range.max-best.range.min))best={hitRate:rate,range,hit,total:scored};
+   if(i%200===0){fill.style.width=(i/poolSize*100).toFixed(1)+'%';label.textContent=`扫描 ${i.toLocaleString()} / ${poolSize.toLocaleString()} · 当前最高 ${Math.max(0,best.hitRate).toFixed(1)}%`;await new Promise(r=>setTimeout(r,0))}
+  }
+  if(cancelled||scanCancelRequested||!opened){toast('扫描已取消，当前区间保持不变。');return}
+  if(best.total===0)throw new Error('当前窗口没有可评估的有效样本');
+  killCurRange={...best.range};killSwitchCount++;isPerfectMode=best.total>0&&best.hitRate>=100;perfectFingerprint=isPerfectMode?historyFingerprint():'';perfectPeriod=isPerfectMode?backtestPeriod:0;
+  try{localStorage.setItem(STORAGE_RANGE,JSON.stringify(killCurRange));localStorage.setItem(STORAGE_PERFECT,JSON.stringify({range:killCurRange,hitRate:best.hitRate,total:best.total,fingerprint:historyFingerprint(),period:backtestPeriod,source:'KA28滚动扫描（不含和值13/14）',timestamp:Date.now()}))}catch(_){}
+  ensureRangeOption(killCurRange);fill.style.width='100%';label.textContent=`完成：${best.hitRate.toFixed(1)}%（${best.hit}/${best.total} 个有效样本）`;render();renderRankList();
+  toast(`自动调节完成：当前样本命中率 ${best.hitRate.toFixed(1)}%，有效样本 ${best.total} 期；已应用区间，历史回测不代表未来表现。`)
+ }catch(e){console.error(e);toast(e.message||'扫描遇到错误，请重试。')}
+ finally{
+  scanning=false;
+  const scanBtn=$('kaAlgoScan');if(scanBtn)scanBtn.disabled=false;
+  if(scanCancelRequested||!opened){wrap.hidden=true}
+  else{clearTimeout(scanHideTimer);scanHideTimer=setTimeout(()=>{if(!scanning)wrap.hidden=true},2600)}
+ }
+}
 function applyRange(){const sel=$('kaAlgoRangeSelect');const pair=(sel?.value||'').split(',').map(Number);if(pair.length!==2||!Number.isFinite(pair[0])||!Number.isFinite(pair[1])||pair[0]>=pair[1]){toast('请选择有效的随机区间。');return}applyChosenRange({min:pair[0],max:pair[1]},'已应用区间')}
-function maybeAutoAdjust(){if(!opened||globalHistory.length<10||scanning)return;const key=`${globalHistory[0].expect}|${globalHistory.length}|${backtestPeriod}`;if(key===autoScanKey)return;autoScanKey=key;setTimeout(()=>{if(opened&&!scanning&&globalHistory.length>=10)scanRange()},900)}
+function maybeAutoAdjust(){if(!opened||globalHistory.length<10||scanning)return;const key=`${historyFingerprint()}|${backtestPeriod}`;if(key===autoScanKey)return;autoScanKey=key;setTimeout(()=>{if(opened&&!scanning&&globalHistory.length>=10)scanRange()},900)}
 function open(){opened=true;$('page-model').classList.add('algorithm-one-active');$('algorithmOneView').hidden=false;render();maybeAutoAdjust();window.scrollTo({top:0,behavior:'smooth'})}
-function close(){opened=false;$('page-model').classList.remove('algorithm-one-active');$('algorithmOneView').hidden=true;window.scrollTo({top:0,behavior:'smooth'})}
+function close(){opened=false;if(scanning)scanCancelRequested=true;clearTimeout(scanHideTimer);const progress=$('kaAlgoProgressWrap');if(progress)progress.hidden=true;$('page-model').classList.remove('algorithm-one-active');$('algorithmOneView').hidden=true;window.scrollTo({top:0,behavior:'smooth'})}
 function refresh(){if(opened){render();maybeAutoAdjust()}}
-function init(){const sel=$('kaAlgoRangeSelect');if(!sel)return;const options=[];for(let min=0;min<=.9;min+=.025)for(let max=min+.2;max<=Math.min(min+.5,1.0001);max+=.025)options.push({min:Number(min.toFixed(3)),max:Number(max.toFixed(3))});sel.innerHTML=options.map(r=>`<option value="${r.min.toFixed(3)},${r.max.toFixed(3)}">${r.min.toFixed(3)} ~ ${r.max.toFixed(3)}</option>`).join('');sel.value=`${killCurRange.min.toFixed(3)},${killCurRange.max.toFixed(3)}`;if(!sel.value.includes(','))sel.selectedIndex=0;document.querySelectorAll('[data-algo-period]').forEach(b=>b.classList.toggle('active',Number(b.dataset.algoPeriod)===backtestPeriod));$('algorithmOneOpen').addEventListener('click',open);$('algorithmOneBack').addEventListener('click',close);$('kaAlgoApplyRange').addEventListener('click',applyRange);$('kaAlgoScan').addEventListener('click',scanRange);$('kaAlgoBacktest').addEventListener('click',e=>{const b=e.target.closest('[data-algo-period]');if(!b)return;backtestPeriod=Number(b.dataset.algoPeriod);try{localStorage.setItem('ka28_algo_one_backtest',String(backtestPeriod))}catch(_){}document.querySelectorAll('[data-algo-period]').forEach(x=>x.classList.toggle('active',x===b));render();toast(`回测窗口已切换至 ${backtestPeriod} 期。`)});$('kaAlgoCopy').addEventListener('click',async()=>{const latest=globalHistory[0];if(!latest){toast('暂无预测结果可复制。');return}const out=`杀${$('kaAlgoKill').textContent} 得 ${$('kaAlgoDouble').textContent.trim().replace(/\s+/g,'')}`;try{await navigator.clipboard.writeText(out);toast('已复制：'+out)}catch(_){const ta=document.createElement('textarea');ta.value=out;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('已复制：'+out)}catch(e){toast('复制失败，请手动复制。')}ta.remove()}});try{const p=JSON.parse(localStorage.getItem(STORAGE_PERFECT)||'null');if(p&&p.range&&p.hitRate>=100)isPerfectMode=true}catch(_){}render()}
+function init(){const sel=$('kaAlgoRangeSelect');if(!sel)return;const options=[];for(let min=0;min<=.9;min+=.025)for(let max=min+.2;max<=Math.min(min+.5,1.0001);max+=.025)options.push({min:Number(min.toFixed(3)),max:Number(max.toFixed(3))});sel.innerHTML=options.map(r=>`<option value="${r.min.toFixed(3)},${r.max.toFixed(3)}">${r.min.toFixed(3)} ~ ${r.max.toFixed(3)}</option>`).join('');sel.value=`${killCurRange.min.toFixed(3)},${killCurRange.max.toFixed(3)}`;if(!sel.value.includes(','))sel.selectedIndex=0;document.querySelectorAll('[data-algo-period]').forEach(b=>b.classList.toggle('active',Number(b.dataset.algoPeriod)===backtestPeriod));$('algorithmOneOpen').addEventListener('click',open);$('algorithmOneBack').addEventListener('click',close);$('kaAlgoApplyRange').addEventListener('click',applyRange);$('kaAlgoScan').addEventListener('click',scanRange);$('kaAlgoBacktest').addEventListener('click',e=>{const b=e.target.closest('[data-algo-period]');if(!b)return;backtestPeriod=Number(b.dataset.algoPeriod);try{localStorage.setItem('ka28_algo_one_backtest',String(backtestPeriod))}catch(_){}document.querySelectorAll('[data-algo-period]').forEach(x=>x.classList.toggle('active',x===b));render();toast(`回测窗口已切换至 ${backtestPeriod} 期。`)});render()}
 window.KA28AlgorithmOne={open,close,refresh,isOpen:()=>opened};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
@@ -1657,7 +1718,7 @@ function luoqiuSeedGroups(seed,item){
 // 取一组种子跑双组，返回杀组
 function luoqiuKill(seed,h){ if(h.length<2) return null; const grp=luoqiuSeedGroups(seed,h[1]); if(!grp||grp.length<3) return null;
   let best=-1,bIdx=0; for(let ki=0;ki<3;ki++){ let hit=0; for(let i=0;i<Math.min(8,h.length-1);i++){
-    const g=luoqiuSeedGroups(seed,h[i+1]); if(g&&g.length>=3){ const d=g.filter((_,x)=>x!==ki); if(h[i].sum===13||h[i].sum===14||d.includes(typeB(h[i].sum))) hit++; } }
+    const g=luoqiuSeedGroups(seed,h[i+1]); if(g&&g.length>=3&&h[i].sum!==13&&h[i].sum!==14){ const d=g.filter((_,x)=>x!==ki); if(d.includes(typeB(h[i].sum))) hit++; } }
     if(hit>best){best=hit;bIdx=ki;} } return {killGroup:grp[bIdx]}; }
 const LQ_SEEDS=[1024,2048,4096,8192];
 LQ_SEEDS.forEach((sd,i)=>add('F'+String(i+1).padStart(2,'0'),'双组种子'+(i+1),'独家双组',h=>luoqiuKill(sd,h)));
@@ -1677,6 +1738,8 @@ const FOUR = ['大单','小单','大双','小双'];
 function algoHit(algo, realIdx){
   const real = HISTORY[realIdx];
   if(!real) return null;
+  // 和值 13/14 在回测报表中标记为特殊期，不计为算法命中或失误。
+  if(real.sum===13||real.sum===14) return null;
   const realType = typeA(real.sum);
   // 用 real 之前的历史去算预测（模拟当时视角）
   const prevHist = HISTORY.slice(realIdx+1);
@@ -1823,64 +1886,68 @@ function renderAlgoTable(){
 }
 
 function renderBacktest(){
-  if(!HISTORY.length){ $('kv_voteBody').innerHTML='<tr><td colspan="6" style="color:var(--mut)">等待数据…</td></tr>'; return; }
-  let hit=0, rows=[];
+  if(!HISTORY.length){ $('kv_voteBody').innerHTML='<tr><td colspan="6" style="color:var(--mut)">等待数据…</td></tr>'; $('kv_voteAcc').textContent='投票结论命中率：—'; return; }
+  let hit=0, scored=0, rows=[];
   const limit=Math.min(50,HISTORY.length-1);
-  // 逐期用"当时视角"重新投票（用该期之后的历史做数据）
+  // 逐期用"当时视角"重新投票；和值13/14单独标记，不计入准确率分母。
   for(let i=0;i<limit;i++){
     const real=HISTORY[i]; if(!real) continue;
-    const realType=typeA(real.sum);
+    const realType=typeA(real.sum), special=(real.sum===13||real.sum===14);
     const prevHist=HISTORY.slice(i+1);
     const tally={'大单':0,'小单':0,'大双':0,'小双':0};
     ALGOS.forEach(a=>{ let kg; try{const r=a.fn(prevHist);kg=r?r.killGroup:null;}catch(e){kg=null;}
       if(kg&&FOUR.includes(kg)) tally[kg]+=WEIGHTS[a.id]||0.25; });
     const winner=FOUR.reduce((a,b)=>tally[a]>tally[b]?a:b);
-    const isHit=(real.sum===13||real.sum===14)||recommend(winner).includes(realType);
-    if(isHit) hit++;
-    rows.push(`<tr><td>${real.expect}</td><td class="hot">${real.nums.join('+')}=${real.sum}</td><td>${realType}</td>`+
+    const isHit=!special&&recommend(winner).includes(realType);
+    if(!special){scored++;if(isHit)hit++;}
+    const mark=special?'— 特殊期（不计入）':isHit?'✓ 命中':'✗ 落空';
+    rows.push(`<tr><td>${escapeHtml(real.expect)}</td><td class="hot">${real.nums.join('+')}=${real.sum}</td><td>${realType}</td>`+
       `<td style="color:var(--rose)">${winner}</td><td style="font-size:10px;">${recommend(winner).join('/')}</td>`+
-      `<td class="${isHit?'y':'n'}">${isHit?'✓ 命中':'✗ 落空'}</td></tr>`);
+      `<td class="${special?'':(isHit?'y':'n')}"${special?' style="color:var(--mut)"':''}>${mark}</td></tr>`);
   }
-  const acc=limit?hit/limit*100:0;
-  $('kv_voteAcc').textContent=`投票结论命中率：${acc.toFixed(1)}%（${hit}/${limit}）`;
+  const acc=scored?hit/scored*100:0;
+  $('kv_voteAcc').textContent=scored?`投票结论命中率：${acc.toFixed(1)}%（${hit}/${scored} 个有效样本；13/14不计分）`:'投票结论命中率：—（当前没有有效评估样本）';
   $('kv_voteBody').innerHTML=rows.reverse().join('');
 }
 
 /* ============================================================
    第五步：数据获取（多源冗余）
    ============================================================ */
-let timer=null;
-async function fetchData(){
+let timer=null, lastFetchSignature='';
+async function fetchDataImpl(){
   // 优先复用 KA28 主站已验证的开奖历史，避免算法页与主页面数据口径不一致。
   try {
     const source = window.KA28GetRecords?.();
     if (Array.isArray(source) && source.length) {
-      const shared = source.slice().reverse().filter(x => Array.isArray(x.digits) && x.digits.length === 3 && Number.isFinite(Number(x.sum)))
+      const shared = source.slice().reverse().filter(x => Array.isArray(x.digits) && x.digits.length === 3)
         .map(x => { const nums=x.digits.map(Number), sum=Number(x.sum); return {expect:String(x.id ?? x.period ?? ''), nums, sum, type:typeA(sum), opentime:parseTime(x.time ?? x.opentime)}; })
-        .filter(x => x.sum >= 0 && x.sum <= 27);
+        .filter(isValidVoteRecord);
       if (shared.length) {
-        const changed = !HISTORY.length || HISTORY[0].expect !== shared[0].expect;
+        const signature=historySignature(shared);
+        if(signature===lastFetchSignature&&HISTORY.length===shared.length)return true;
+        const contentChanged=signature!==lastFetchSignature;
+        lastFetchSignature=signature;
         HISTORY = shared;
         computeStats(30);
         renderAll();
-        if (changed) renderBacktest();
+        if(contentChanged)renderBacktest();
         return true;
       }
     }
   } catch (e) {}
   const apis=[
     {url:'https://super.pc28998.com/history/JND28', p:json=>{
-      if(json.code!==1||!json.data) return null;
-      return json.data.map(it=>{ const n=it.opencode.split(',').map(Number), s=n.reduce((a,b)=>a+b,0);
-        return {expect:String(it.expect),nums:n,sum:s,type:typeA(s),opentime:parseTime(it.opentime)}; });
+      if(json.code!==1||!Array.isArray(json.data)) return null;
+      return json.data.map(it=>{ const n=String(it.opencode??'').split(',').map(Number), s=n.reduce((a,b)=>a+b,0);
+        return {expect:String(it.expect??''),nums:n,sum:s,type:typeA(s),opentime:parseTime(it.opentime)}; });
     }},
     {url:'https://28.run/api/lottery/recent/6', p:json=>{
-      if(!json?.recent_results?.length) return null;
-      return json.recent_results.map(it=>({expect:String(it.expect),nums:[it.number1,it.number2,it.number3],sum:it.final_result,type:typeA(it.final_result),opentime:Math.floor(new Date(it.opentime.replace(' ','T')).getTime()/1000)}));
+      if(!Array.isArray(json?.recent_results)||!json.recent_results.length) return null;
+      return json.recent_results.map(it=>{const sum=Number(it.final_result);return {expect:String(it.expect??''),nums:[Number(it.number1),Number(it.number2),Number(it.number3)],sum,type:typeA(sum),opentime:parseTime(it.opentime)};});
     }},
     {url:'https://pc28.help/api/kj.json?nbr=60', p:json=>{
-      if(!json.data||!json.data.length) return null;
-      return json.data.map(it=>{const n=it.number.split('+').map(Number);return{expect:String(it.nbr),nums:n,sum:parseInt(it.num),type:typeA(parseInt(it.num)),opentime:new Date((it.date||'')+' '+(it.time||'')).getTime()/1000};});
+      if(!Array.isArray(json?.data)||!json.data.length) return null;
+      return json.data.map(it=>{const n=String(it.number??'').split('+').map(Number),sum=Number.parseInt(it.num,10);return{expect:String(it.nbr??''),nums:n,sum,type:typeA(sum),opentime:parseTime([it.date,it.time].filter(Boolean).join(' '))};});
     }}
   ];
   for(const api of apis){
@@ -1889,27 +1956,33 @@ async function fetchData(){
       const res=await fetch(api.url,{signal:ctrl}); if(!res.ok) continue;
       const json=await res.json();
       let list=api.p(json); if(!list) continue;
-      list=list.filter(x=>x&&x.sum>=0&&x.sum<=27).sort((a,b)=>parseInt(b.expect)-parseInt(a.expect));
+      list=list.filter(isValidVoteRecord).sort((a,b)=>{const na=Number(a.expect),nb=Number(b.expect);if(Number.isFinite(na)&&Number.isFinite(nb)&&na!==nb)return nb-na;return (Number(b.opentime)||0)-(Number(a.opentime)||0)});
       if(list.length<3) continue;
-      const changed = !HISTORY.length || HISTORY[0].expect!==list[0].expect;
+      const signature=historySignature(list);
+      if(signature===lastFetchSignature&&HISTORY.length===list.length)return true;
+      const contentChanged=signature!==lastFetchSignature;
+      lastFetchSignature=signature;
       HISTORY=list;
       computeStats(30);
       renderAll();
-      if(changed) renderBacktest();
+      if(contentChanged)renderBacktest();
       return true;
     }catch(e){}
   }
   return false;
 }
-// 兼容不同 API 解析
-function catchFn(json){ return json; }
-
+// Normalize source history before using it for weights or backtests.
+function isValidVoteRecord(x){if(!x||!Array.isArray(x.nums)||x.nums.length!==3)return false;const nums=x.nums.map(Number),sum=Number(x.sum);return nums.every(n=>Number.isInteger(n)&&n>=0&&n<=9)&&Number.isInteger(sum)&&sum>=0&&sum<=27&&nums.reduce((a,b)=>a+b,0)===sum&&String(x.expect??'').trim()!=='';}
+function historySignature(list){return JSON.stringify(list.map(x=>[x.expect,x.nums,x.sum]));}
+function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function parseTime(v){
-  if(!v) return Date.now()/1000;
-  if(typeof v==='number') return v>1e12?v/1000:v;
-  if(typeof v==='string'){ const d=new Date(v.replace(' ','T')); if(!isNaN(d.getTime())) return d.getTime()/1000; }
-  return Date.now()/1000;
+  if(v===null||v===undefined||v==='') return NaN;
+  if(typeof v==='number') return Number.isFinite(v)?(v>1e12?v/1000:v):NaN;
+  if(typeof v==='string'){const raw=v.trim().replace(' ','T');const d=new Date(raw);if(Number.isFinite(d.getTime()))return d.getTime()/1000;}
+  return NaN;
 }
+let fetchDataPromise=null;
+function fetchData(){if(fetchDataPromise)return fetchDataPromise;fetchDataPromise=fetchDataImpl().finally(()=>{fetchDataPromise=null});return fetchDataPromise;}
 
 function renderLatest(){
   if(!HISTORY.length) return;
@@ -1921,6 +1994,7 @@ function renderLatest(){
   $('kv_tp').style.color = l.type.includes('大')?'#5eead4':'#f5b942';
 }
 function tick(){
+  if(document.hidden)return;
   const counter = $('kv_cd');
   if(!counter) return;
   // 与 KA 独家算法共用同一个倒计时源，确保封盘状态、API 校准和临时倒计时完全一致。
@@ -1953,7 +2027,6 @@ function renderAll(){ renderLatest(); renderVote(); renderRank(); renderAlgoTabl
 /* ============================================================
    第六步：启动
    ============================================================ */
-let booted=false;
 function init(){
   document.querySelectorAll('#kv_rankMode .tb').forEach(b=>b.onclick=()=>{
     document.querySelectorAll('#kv_rankMode .tb').forEach(x=>x.classList.remove('on'));
@@ -1968,13 +2041,12 @@ function init(){
   });
   timer=setInterval(tick,1000);
   setInterval(async()=>{
-    const ok = await fetchData();
-    if(!ok && HISTORY.length){
-      try{ computeStats(30); renderAll(); renderBacktest(); }catch(e){ console.warn('投票算法定时刷新失败',e); }
-    }
+    if(document.hidden)return;
+    // 网络失败时保留最后一次已验证数据；不要每 15 秒重复计算和重绘旧结果。
+    await fetchData();
   },15000);
   document.addEventListener('visibilitychange',()=>{
-    if(!document.hidden){ fetchData().then(ok=>{if(!ok&&HISTORY.length){computeStats(30);renderAll();renderBacktest();}}); }
+    if(!document.hidden)fetchData();
   });
   document.addEventListener('ka28-vote-refresh',()=>{fetchData();});
 }
