@@ -493,10 +493,19 @@ button{-webkit-tap-highlight-color:transparent;transition:background .18s ease,b
 #kaVoteView #kv_cd{display:inline-flex;align-items:center;justify-content:center;min-width:58px;padding:4px 9px;border:1px solid rgba(94,234,212,.22);border-radius:8px;background:rgba(94,234,212,.07);font-variant-numeric:tabular-nums;font-weight:800;color:#5eead4}
 @media(max-width:560px){#kaVoteView .vote .vrow{gap:7px}#kaVoteView .vote .vrow .lb{width:42px;min-width:42px;flex-basis:42px;font-size:10px}#kaVoteView .vote .vrow .vc{width:25px;min-width:25px;flex-basis:25px;font-size:10px}#kaVoteView .vote .bar .vl{font-size:9px!important;padding:0 3px!important}}
 
-/* Mobile nav: keep the capsule's own centering transform intact. The active
-   highlight is positioned from measured button bounds to avoid cumulative drift. */
+/* Mobile nav: use viewport side anchors. The <=390px rule previously set
+   left:8px while retaining translateX(-50%), shifting half the bar off-screen.
+   Left/right anchoring avoids that conflicting responsive positioning math. */
 @media (max-width: 720px) {
   .mobile-nav {
+    position: fixed !important;
+    left: max(8px, env(safe-area-inset-left, 0px)) !important;
+    right: max(8px, env(safe-area-inset-right, 0px)) !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
     box-sizing: border-box !important;
     display: grid !important;
     grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
@@ -1118,10 +1127,20 @@ button{-webkit-tap-highlight-color:transparent;transition:background .18s ease,b
     nav.querySelectorAll('button[data-page]').forEach(b=>b.addEventListener('click',()=>requestAnimationFrame(syncNav)));
     const observer=new MutationObserver(()=>requestAnimationFrame(syncNav));
     nav.querySelectorAll('button[data-page]').forEach(b=>observer.observe(b,{attributes:true,attributeFilter:['class']}));
-    window.addEventListener('resize',()=>requestAnimationFrame(syncNav),{passive:true});
-    window.addEventListener('orientationchange',()=>setTimeout(syncNav,80),{passive:true});
-    window.addEventListener('pageshow',()=>requestAnimationFrame(syncNav));
-    if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>requestAnimationFrame(syncNav));
+    const scheduleNavSync=()=>requestAnimationFrame(syncNav);
+    window.addEventListener('resize',scheduleNavSync,{passive:true});
+    window.addEventListener('orientationchange',()=>setTimeout(scheduleNavSync,80),{passive:true});
+    window.addEventListener('pageshow',scheduleNavSync);
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize',scheduleNavSync,{passive:true});
+      window.visualViewport.addEventListener('scroll',scheduleNavSync,{passive:true});
+    }
+    if('ResizeObserver' in window){
+      const navResizeObserver=new ResizeObserver(scheduleNavSync);
+      navResizeObserver.observe(nav);
+      buttons.forEach(button=>navResizeObserver.observe(button));
+    }
+    if(document.fonts&&document.fonts.ready)document.fonts.ready.then(scheduleNavSync);
   }
   if(!reduce){
     const selectors=['.brand','.topbar','.page.active','.page-section','.stat-card','.card','.footnote'];
