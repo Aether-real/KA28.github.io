@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#f3f5f9">
 <script src="https://cdn.bootcdn.net/ajax/libs/jsencrypt/3.3.2/jsencrypt.min.js"></script>
 <script src="https://cdn.bootcdn.net/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-<title>KA28开奖网 · 预测</title>
+<title>KA28开奖网 · 预测实验室</title>
 <style>
 :root{color-scheme:dark;--bg:#08111d;--glass:rgba(20,34,51,.72);--glass2:rgba(18,29,45,.82);--line:rgba(180,211,237,.14);--line2:rgba(132,210,208,.24);--text:#eef6ff;--muted:#91a5b9;--mint:#7cf0d0;--blue:#8db8ff;--amber:#f4c26e;--rose:#ff91a6;--violet:#b6a4ff;--shadow:0 20px 52px rgba(0,0,0,.26);--radius:24px}
 *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:18px}body{margin:0;min-height:100vh;color:var(--text);font:14px/1.55 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:radial-gradient(ellipse at 12% -8%,rgba(55,125,135,.25),transparent 36%),radial-gradient(ellipse at 98% 15%,rgba(93,96,185,.2),transparent 32%),linear-gradient(150deg,#08111d,#0c1726 55%,#080f1a);background-attachment:fixed}button,select{font:inherit}button{cursor:pointer}button:focus-visible,select:focus-visible{outline:2px solid var(--mint);outline-offset:3px}.shell{width:min(1080px,100%);margin:0 auto;padding:20px clamp(13px,3vw,30px) 50px}.glass{background:linear-gradient(145deg,rgba(24,42,61,.77),rgba(13,25,40,.73));border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow),inset 0 1px rgba(255,255,255,.045);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%)}
@@ -742,6 +742,144 @@ body[data-theme="dark"] #kenoGrid .keno-ball * {
 @media(max-width:420px){.range-tuning-controls{grid-template-columns:1fr 1fr}.range-tuning-controls label{grid-column:1/-1}.range-tuning-controls .btn{grid-column:1/-1;width:100%}}
 body[data-theme="dark"] .range-tuning-card{background:#202a3b!important;border-color:#39465d!important;color:#edf2f9!important}
 body[data-theme="light"] .range-tuning-card{background:#f8faff!important;border-color:#dce5f1!important;color:#172033!important}
+
+/* Layout refinement: move countdown into hero and constrain scratch layer to number row */
+.hero{align-items:flex-start!important}
+.hero-copy{min-width:0;flex:1}
+.hero-countdown{display:grid!important;grid-template-columns:1fr auto;align-items:center;justify-content:stretch;gap:2px 12px;margin-top:12px!important;padding:10px 14px!important;max-width:390px;background:var(--surface-soft)!important;border:1px solid var(--line)!important;border-radius:14px!important;text-align:left!important}
+.hero-countdown span{grid-column:1;grid-row:1;color:var(--muted)!important;font-size:11px!important}
+.hero-countdown strong{grid-column:2;grid-row:1/3;color:var(--lime,var(--mint))!important;font-size:clamp(23px,5vw,30px)!important;line-height:1.1}
+.hero-countdown small{grid-column:1;grid-row:2;flex-basis:auto!important;color:var(--muted)!important;font-size:10px!important}
+.scratch-zone{padding:12px 10px!important;background:transparent!important;border:1px solid var(--line)!important;border-radius:14px!important;overflow:hidden!important}
+.scratch-surface{position:relative;isolation:isolate;width:100%;min-height:clamp(76px,22vw,116px);display:flex;align-items:center;justify-content:center;border-radius:14px;overflow:hidden;background:var(--surface-soft);border:1px solid var(--line)}
+.scratch-surface .balls{position:relative;z-index:1;margin:8px auto!important;width:100%;padding:0 4px;gap:clamp(4px,1.4vw,9px)!important}
+.scratch-canvas{position:absolute!important;inset:0!important;width:100%;height:100%;border-radius:14px!important;z-index:5}
+body[data-theme="dark"] .scratch-zone{background:transparent!important;border-color:#344258!important}
+body[data-theme="dark"] .scratch-surface{background:#202a3e!important;border-color:#3a465d!important}
+body[data-theme="light"] .scratch-zone{background:transparent!important;border-color:#dce4ef!important}
+body[data-theme="light"] .scratch-surface{background:#f7f9fd!important;border-color:#dce4ef!important}
+@media(max-width:600px){.hero{gap:10px!important}.hero-countdown{max-width:none;width:100%;box-sizing:border-box}.hero>#refreshBtn{align-self:flex-end;margin-top:72px;padding:10px!important;font-size:11px!important}.scratch-zone{padding:9px 7px!important}.scratch-surface{min-height:76px}.scratch-surface .balls{margin:7px auto!important}}
+
+
+/* ===== Goblin true-result backtest + large scratch surface + smooth rendering ===== */
+.hero-time-header{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;margin:0 0 18px!important;padding:6px 2px!important}
+.hero-timeblock{min-width:0;flex:1 1 auto}
+.hero-timeblock>.eyebrow{margin-bottom:7px!important;color:var(--blue)!important;font-size:9px!important;letter-spacing:.15em!important;font-weight:900!important}
+.hero-time-line{display:flex;align-items:center;gap:12px;min-width:0;flex-wrap:wrap}
+.hero-time-line>span{font-size:clamp(15px,1.8vw,19px);font-weight:850;color:var(--text);letter-spacing:-.02em}
+.hero-time-value{display:inline-block;min-width:0;font-size:clamp(16px,2.1vw,23px);font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.025em;color:var(--text);overflow-wrap:anywhere}
+.hero-time-value.time-changed{animation:drawTimeReveal .58s cubic-bezier(.2,.8,.2,1) both}
+.hero-time-pulse{width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:#17a987;box-shadow:0 0 0 0 rgba(23,169,135,.25);animation:drawTimePulse 2.2s ease-out infinite}
+.hero-countdown{flex:0 0 auto;min-width:220px;max-width:320px;margin-top:0!important}
+.draw-head{align-items:flex-start!important}
+.draw-head-left{min-width:0;flex:1}
+.draw-sync-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.draw-sync-btn{display:inline-flex;align-items:center;gap:7px;min-height:35px!important;padding:0 11px!important;background:var(--blue)!important;border-color:var(--blue)!important;color:#fff!important;border-radius:10px!important}
+.draw-sync-btn .sync-icon{display:inline-block;font-size:15px;line-height:1}
+.draw-sync-btn.is-syncing .sync-icon{animation:syncTurn .8s linear infinite}
+.draw-head-titles h3{margin:0;font-size:clamp(18px,2vw,22px)!important;font-weight:900;letter-spacing:-.035em}
+.draw-head-titles p{margin:3px 0 0;color:var(--muted);font-size:11px}
+.draw-actions{flex:0 0 auto}
+/* Scratch canvas is much taller and the eraser stroke is wider to make scratching comfortable. */
+.scratch-zone{padding:15px 14px!important}
+.scratch-surface{min-height:clamp(136px,20vw,190px)!important;border-radius:17px!important}
+.scratch-surface .balls{margin:18px auto!important}
+.scratch-canvas{border-radius:17px!important}
+.draw-meta span,.chips .chip{transition:opacity .16s ease,transform .16s ease}
+/* Goblin block inside each validated historical record. */
+.forecast-goblin-record{margin-top:10px;padding:10px 11px;border:1px solid rgba(133,102,224,.24);border-radius:12px;background:rgba(126,95,213,.055)}
+.forecast-goblin-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.forecast-goblin-head b{font-size:11px;color:var(--violet);font-weight:900}
+.forecast-goblin-head span{font-size:9px;color:var(--muted)}
+.forecast-goblin-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.forecast-goblin-cell{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;padding:8px;border:1px solid var(--line);border-radius:9px;background:var(--surface-soft)}
+.forecast-goblin-cell small{color:var(--muted);font-size:9px;line-height:1.3}
+.forecast-goblin-cell>b{font-size:11px;font-weight:900;overflow-wrap:anywhere;color:var(--text)}
+.forecast-goblin-cell .goblin-kill-text{color:var(--rose)}
+.forecast-goblin-note{display:block;margin-top:7px;color:var(--muted);font-size:9px;line-height:1.5}
+.forecast-stats-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+body[data-theme="dark"] .forecast-goblin-record{background:rgba(145,116,237,.10);border-color:rgba(166,143,239,.35)}
+body[data-theme="dark"] .forecast-goblin-cell{background:#202a3b!important;border-color:#39465d!important}
+body[data-theme="dark"] .forecast-goblin-head b{color:#c4b4ff}
+body[data-theme="dark"] .forecast-goblin-cell>b{color:#edf2f9}
+body[data-theme="dark"] .forecast-goblin-cell .goblin-kill-text{color:#ff8b9d}
+@keyframes drawTimeReveal{0%{opacity:.25;transform:translateY(7px);filter:blur(2px)}65%{opacity:1;transform:translateY(-1px);filter:blur(0)}100%{opacity:1;transform:translateY(0);filter:none}}
+@keyframes drawTimePulse{0%{box-shadow:0 0 0 0 rgba(23,169,135,.28)}65%{box-shadow:0 0 0 7px rgba(23,169,135,0)}100%{box-shadow:0 0 0 0 rgba(23,169,135,0)}}
+@keyframes syncTurn{to{transform:rotate(360deg)}}
+@media(max-width:760px){
+ .hero-time-header{align-items:stretch!important;flex-direction:column!important;gap:12px!important;margin-bottom:14px!important}
+ .hero-time-line{gap:8px}.hero-time-value{font-size:clamp(15px,4.2vw,20px)}
+ .hero-countdown{width:100%;max-width:none;min-width:0;box-sizing:border-box}
+ .draw-head{flex-direction:column!important;gap:12px!important}
+ .draw-head-left{width:100%}.draw-actions{width:100%;justify-content:flex-start!important}
+ .scratch-zone{padding:11px 9px!important}.scratch-surface{min-height:clamp(136px,37vw,165px)!important}
+ .scratch-surface .balls{margin:16px auto!important}
+ .forecast-goblin-record{padding:8px}.forecast-goblin-grid{gap:5px}.forecast-goblin-cell{padding:6px}
+ .forecast-goblin-cell small{font-size:8px}.forecast-goblin-cell>b{font-size:10px}
+ .forecast-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:380px){
+ .hero-time-line{align-items:flex-start;flex-direction:column;gap:3px}
+ .draw-sync-row{gap:6px}.draw-sync-btn{min-height:33px!important;padding:0 9px!important}
+ .scratch-surface{min-height:140px!important}
+ .forecast-goblin-grid{grid-template-columns:1fr}
+ .forecast-goblin-cell{display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center}
+ .forecast-goblin-cell small,.forecast-goblin-cell>b{margin:0}
+}
+@media(prefers-reduced-motion:reduce){.hero-time-pulse,.hero-time-value.time-changed,.draw-sync-btn.is-syncing .sync-icon{animation:none!important}}
+
+
+/* User-requested finishing touches: center and enlarge countdown digits; pin sync action to the latest-draw card's upper-right. */
+.hero-countdown{
+  display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+  gap:7px!important;text-align:center!important;min-height:112px;box-sizing:border-box;
+}
+.hero-countdown span,.hero-countdown strong,.hero-countdown small{
+  display:block!important;width:100%;flex-basis:auto!important;grid-column:auto!important;grid-row:auto!important;text-align:center!important;
+}
+.hero-countdown span{font-size:12px!important;}
+.hero-countdown strong{
+  font-size:clamp(36px,6vw,48px)!important;line-height:1.05!important;letter-spacing:.035em!important;
+  font-weight:950!important;font-variant-numeric:tabular-nums!important;
+}
+.hero-countdown small{font-size:10px!important;line-height:1.4!important;}
+.draw-head{
+  display:grid!important;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;
+  align-items:start!important;column-gap:10px!important;row-gap:10px!important;flex-direction:initial!important;
+}
+.draw-head-left{grid-column:1;grid-row:1 / span 2;min-width:0;width:auto!important;}
+.draw-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;}
+.draw-title-row h3{margin:0;}
+.draw-title-row #drawStatus{margin:0;}
+.draw-head-left .draw-head-titles p{margin-top:5px!important;}
+.draw-head>#refreshBtn{grid-column:2;grid-row:1;justify-self:end;align-self:start;margin:0!important;}
+.draw-head .draw-actions{grid-column:2;grid-row:2;display:flex!important;justify-content:flex-end!important;align-items:center;gap:7px!important;flex-wrap:wrap;width:auto!important;min-width:0;}
+@media(max-width:600px){
+  .hero-countdown{min-height:118px!important;padding:13px 12px!important;}
+  .hero-countdown strong{font-size:clamp(38px,10vw,46px)!important;}
+  .draw-head{grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:auto auto!important;column-gap:7px!important;row-gap:9px!important;}
+  .draw-head-left{grid-column:1!important;grid-row:1 / span 2!important;width:auto!important;}
+  .draw-head>#refreshBtn{grid-column:2!important;grid-row:1!important;justify-self:end!important;min-height:34px!important;padding:0 9px!important;font-size:11px!important;}
+  .draw-head .draw-actions{grid-column:1 / -1!important;grid-row:3!important;width:100%!important;justify-content:flex-end!important;}
+}
+@media(max-width:360px){
+  .draw-title-row{gap:5px!important;}
+  .draw-title-row h3{font-size:17px!important;}
+  .draw-title-row #drawStatus{font-size:9px!important;padding:4px 7px!important;}
+  .draw-head>#refreshBtn{font-size:10px!important;gap:5px!important;padding:0 7px!important;}
+}
+
+
+.goblin-four-panel{margin-top:22px;padding:18px;border:1px solid var(--line,rgba(120,130,150,.2));border-radius:20px;background:var(--panel-soft,rgba(127,127,127,.045))}.goblin-sum-four-grid{margin-top:10px}.goblin-sum-four-grid .sum-four-card{border-color:rgba(170,130,255,.34)}.goblin-sum-four-grid .sum-four-kicker{color:#9472e8}.four-rank-compare{margin-top:18px}.four-rank-compare-body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}.four-rank-card{min-width:0;padding:14px;border:1px solid var(--line,rgba(120,130,150,.2));border-radius:15px;background:var(--card,rgba(127,127,127,.05))}.four-rank-card.is-best{border-color:rgba(34,197,94,.5);box-shadow:inset 0 0 0 1px rgba(34,197,94,.08)}.four-rank-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:750}.four-rank-rate{font-size:22px;font-weight:850;letter-spacing:-.03em;margin:10px 0 4px}.four-rank-meta{font-size:12px;color:var(--muted);line-height:1.55}.four-rank-slots{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}.four-rank-slots span{font-size:11px;padding:4px 7px;border-radius:8px;background:var(--chip,rgba(127,127,127,.09))}.four-rank-slots b{font-weight:800}.four-rank-note{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5}@media(max-width:520px){.goblin-four-panel{padding:12px}.four-rank-compare-body{grid-template-columns:1fr}.four-rank-rate{font-size:20px}}
+.forecast-goblin-four-inline{margin-top:10px;padding:12px;border:1px solid var(--line2);border-radius:14px;background:var(--surface,rgba(255,255,255,.025));display:flex;flex-wrap:wrap;align-items:center;gap:8px}.forecast-goblin-four-inline .forecast-goblin-head{width:100%;margin:0}.forecast-goblin-four-inline .forecast-sum-values{display:flex;flex-wrap:wrap;gap:6px}.forecast-goblin-four-inline .forecast-goblin-note{flex-basis:100%;display:block}
+
+/* 星轨四码是现有星轨算法模块内的子区域，维持紧凑排版，不另起独立模块。 */
+.goblin-four-grid{margin:8px 0 5px;gap:7px}
+.goblin-four-grid .sum-four-card{min-height:67px;padding:7px 3px 5px}
+.goblin-four-grid .sum-four-kicker{font-size:8px}
+.goblin-four-grid .sum-four-card strong{font-size:clamp(20px,3vw,27px)}
+.goblin-four-grid .sum-four-card small{font-size:8px;line-height:1.15}
+@media(max-width:640px){.goblin-four-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.goblin-four-grid .sum-four-card{min-height:60px}.goblin-four-grid .sum-four-card strong{font-size:20px}.goblin-four-grid .sum-four-card small{font-size:7px}}
 </style>
 </head>
 <body>
@@ -782,21 +920,22 @@ body[data-theme="light"] .range-tuning-card{background:#f8faff!important;border-
     <div class="top-tools"><div class="status" aria-live="polite"><i id="statusDot" class="dot"></i><span id="statusText" class="status-text">正在连接开奖 API…</span></div><button id="announcementBtn" class="btn secondary mini" type="button" aria-label="查看网站公告与更新">公告 / 更新</button><button id="themeBtn" class="btn secondary mini" aria-label="切换主题" title="切换亮色/暗色主题">☀️</button></div>
   </header>
 
-  <section class="hero fade" style="--d:80ms">
-    <div><div class="eyebrow">LIVE DRAW / NEXT SUM MODEL</div><h2>开奖与预测</h2><p>以真实开奖历史计算候选和值、分类遗漏与滚动回测。模型用于统计研究，不承诺改变随机开奖概率。</p></div>
-    <button id="refreshBtn" class="btn">↻ 同步数据</button>
+  <section class="hero hero-time-header fade" style="--d:80ms" aria-label="开奖时间与倒计时">
+    <div class="hero-timeblock">
+      <div class="eyebrow">LIVE DRAW TIME</div>
+      <div class="hero-time-line"><span>开奖时间</span><strong id="heroDrawTime" class="hero-time-value">等待开奖数据</strong><i class="hero-time-pulse" aria-hidden="true"></i></div>
+    </div>
+    <div class="countdown hero-countdown"><span>距离下期开奖</span><strong id="countdownText">--:--</strong><small id="countdownHint">等待 API 下期开奖时间</small></div>
   </section>
 
   <section id="drawSection" class="glass draw-card fade" style="--d:140ms">
-    <div class="draw-head"><div><h3>最新开奖</h3><p>号码、和值、形态与下期开奖时间以 API 为准</p></div><div class="draw-actions"><span id="drawStatus" class="tag"><i class="dot"></i>等待数据</span><button id="soundBtn" class="btn secondary mini" aria-pressed="false">🔔 提示音：关</button><button id="scratchBtn" class="btn secondary mini">咪牌</button></div></div>
+    <div class="draw-head"><div class="draw-head-left"><div class="draw-head-titles"><div class="draw-title-row"><h3>最新开奖</h3><span id="drawStatus" class="tag"><i class="dot"></i>等待数据</span></div><p>开奖号码与开奖时间来自真实 API</p></div></div><button id="refreshBtn" class="btn draw-sync-btn" type="button"><span class="sync-icon" aria-hidden="true">↻</span> 同步数据</button><div class="draw-actions"><button id="soundBtn" class="btn secondary mini" aria-pressed="false">🔔 提示音：关</button><button id="scratchBtn" class="btn secondary mini">咪牌</button></div></div>
     <div id="scratchZone" class="scratch-zone">
       <div class="period">第 <b id="periodNo">—</b> 期 <span id="drawTimeInline" style="color:var(--muted);margin-left:7px">等待开奖数据</span></div>
-      <div class="balls" id="drawBalls" aria-live="polite"><span class="ball">—</span><span class="op">+</span><span class="ball b2">—</span><span class="op">+</span><span class="ball b3">—</span><span class="op">=</span><span class="ball sum">—</span></div>
+      <div class="scratch-surface" id="scratchSurface"><div class="balls" id="drawBalls" aria-live="polite"><span class="ball">—</span><span class="op">+</span><span class="ball b2">—</span><span class="op">+</span><span class="ball b3">—</span><span class="op">=</span><span class="ball sum">—</span></div><canvas id="scratchCanvas" class="scratch-canvas" aria-label="刮开查看开奖数字与和值"></canvas></div>
       <div class="draw-meta"><span id="drawCombo">大小单双：—</span><span id="drawShape">开奖形态：—</span></div>
       <div class="chips" id="drawTags"></div>
-      <canvas id="scratchCanvas" class="scratch-canvas" aria-label="刮开查看开奖数字与和值"></canvas>
     </div>
-    <div class="countdown"><span>距离下期开奖</span><strong id="countdownText">--:--</strong><small id="countdownHint">等待 API 下期开奖时间</small></div>
     <div class="keno"><div class="keno-head"><strong>原始 Keno 20 球</strong><span id="kenoState" class="tag">等待 API 返回</span></div><div id="kenoGrid" class="keno-grid"><div class="tag" style="grid-column:1/-1;justify-content:center">等待真实 Keno 数据</div></div></div>
     <div class="meta-grid"><div class="meta-item"><span>开奖时间</span><strong id="metaDrawTime">—</strong></div><div class="meta-item"><span>开奖号码校验</span><strong id="metaValidate">—</strong></div><div class="meta-item"><span>下期开奖时间</span><strong id="metaNextTime">—</strong></div><div class="meta-item"><span>更新时间</span><strong id="metaUpdated">—</strong></div></div>
   </section>
@@ -816,7 +955,25 @@ body[data-theme="light"] .range-tuning-card{background:#f8faff!important;border-
         </div>
         <div class="prediction-step"><div class="subhead"><span><b class="step-label">02</b> 二门组合</span><span class="tag">杀组之外 · 投票前二</span></div><div id="comboTwo" class="combo-two"><span class="tag">等待算法计算</span></div><p class="step-help">从综合杀组以外的三个组合中，按加权投票得分选出前两组。</p></div>
         <div class="prediction-step"><div class="subhead"><span><b class="step-label">03</b> 三组组合</span><span class="tag">其余全部三组</span></div><div id="comboThree" class="combo-three"><span class="tag">等待算法计算</span></div><div class="three-door-box"><div class="subhead"><span>分享算法 · 三门参考</span><span id="threeDoorRange" class="tag">区间待选</span></div><div id="threeDoorGroups" class="combo-three"><span class="tag">等待历史数据</span></div><small id="threeDoorInfo">根据上传算法中的种子、区间和三门规则进行滚动选参；回测仅作历史参考。</small></div></div>
-        <div class="vote-bars" id="killVoteBars"></div>
+        <div class="goblin-panel glass-inset" id="goblinPanel" style="margin-top:18px;padding:16px;border-radius:18px;border:1px solid var(--line2)">
+        <div class="section-title"><div><span class="step-label">05</span><h4>🐲 哥布林·星轨算法</h4><p>星轨算法沿用原版哥布林逻辑，结合 KA28 历史窗口展示四码、杀号组、三门与双组参考。</p></div><span class="tag" id="goblinStatus">等待历史数据</span></div>
+        <div class="subhead" style="margin-top:12px"><span>星轨四码参考</span><span class="tag">和值 0–27 · 当前下一期</span></div>
+        <div id="goblinFourCodes" class="sum-four-grid goblin-four-grid" aria-label="星轨算法和值四码">
+          <div class="sum-four-card"><span class="sum-four-kicker">星轨 01</span><strong>—</strong><small>等待历史数据</small></div>
+          <div class="sum-four-card"><span class="sum-four-kicker">星轨 02</span><strong>—</strong><small>等待历史数据</small></div>
+          <div class="sum-four-card"><span class="sum-four-kicker">星轨 03</span><strong>—</strong><small>等待历史数据</small></div>
+          <div class="sum-four-card"><span class="sum-four-kicker">星轨 04</span><strong>—</strong><small>等待历史数据</small></div>
+        </div>
+        <small id="goblinFourNote" class="step-help">四码按星轨分组与当前和值评分生成；仅作历史参考。</small>
+        <div class="kill-result-grid">
+          <div class="kill-result"><span>星轨杀号组</span><strong id="goblinKill">—</strong><small id="goblinKillNote">等待有效开奖</small></div>
+          <div class="kill-result alt"><span>三门池</span><strong id="goblinPool">—</strong><small id="goblinPoolNote">使用原算法分组规则</small></div>
+        </div>
+        <div class="subhead" style="margin-top:14px"><span>双组参考</span><span class="tag" id="goblinPeriod">—</span></div>
+        <div id="goblinBets" class="combo-two"><span class="tag">等待历史数据</span></div>
+        <small id="goblinExplain" class="step-help">算法仅为历史统计实验，不代表未来开奖结果或命中保证。</small>
+      </div>
+      <div class="vote-bars" id="killVoteBars"></div>
       </div>
       <div class="sum-forecast-block">
         <div class="section-title"><div><span class="step-label">04</span><h4>🎯 预测和值 · 四码参考</h4><p>优先显示和值模型历史回测表现较好的4个候选值，样本不足时按当前融合评分补足。</p></div><span class="tag">和值 0–27</span></div>
@@ -827,6 +984,7 @@ body[data-theme="light"] .range-tuning-card{background:#f8faff!important;border-
           <button class="sum-four-card" type="button" disabled><span class="sum-four-kicker">参考 04</span><strong>—</strong><small>等待历史数据</small></button>
         </div>
         <div id="sumFourNote" class="disclaimer">和值模型用历史样本逐期回测排名；“评分”不是已知的真实开奖概率。现有主算法包以杀组输出为主，不能直接等同于和值预测公式。</div>
+
       </div>
       <section class="algo-rank-panel" aria-labelledby="algoRankTitle">
         <div class="panel-head"><div><h3 id="algoRankTitle">算法排行榜 · Top 3</h3><p>按当前历史窗口的逐期杀组回测命中率排序。点击算法卡片查看详情，可上滑全屏或下滑折叠。</p></div><span id="algoRankWindow" class="tag">最近 50 期</span></div>
@@ -872,6 +1030,9 @@ body[data-theme="light"] .range-tuning-card{background:#f8faff!important;border-
 (()=>{'use strict';
 const API='https://pc28.world/api/v1';
 const $=s=>document.querySelector(s);
+// Move the existing 星轨算法 panel directly below the standard four-code reference;
+// its four-code output remains a subsection of that same panel, not a separate module.
+(()=>{const panel=$('#goblinPanel'),reference=$('.sum-forecast-block');if(panel&&reference&&panel.parentElement!==reference.parentElement)reference.after(panel);else if(panel&&reference&&reference.nextElementSibling!==panel)reference.after(panel);})();
 const state={records:[],latest:null,updatedAt:null,nextDrawAt:null,countdownSeconds:null,window:50,loading:false,historyLoaded:false,historyError:'',lastKenoAttempt:{},lastKenoNotice:0};
 const STORAGE={records:'ka28.lab.records.v2',keno:'ka28.lab.keno.v2'};
 const theoretical=Array(28).fill(0);for(let a=0;a<10;a++)for(let b=0;b<10;b++)for(let c=0;c<10;c++)theoretical[a+b+c]++;
@@ -1308,12 +1469,62 @@ let toastTimer=0;function toast(msg){const e=$('#toast');e.textContent=String(ms
 async function getJSON(path,timeout=9000){const ctrl=new AbortController();const tid=setTimeout(()=>ctrl.abort(),timeout);try{const res=await fetch(API+path,{signal:ctrl.signal,headers:{Accept:'application/json'},cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);const j=await res.json();if(j?.ok===false)throw new Error(j.error?.message||'API 返回错误');return j}finally{clearTimeout(tid)}}
 function getDrawFromLatest(j){return j?.data?.draw??j?.data?.item??null}
 function setCountdown(j){const c=j?.data?.countdown;const sec=Number(c?.seconds);const at=Number(c?.next_draw_at);state.countdownSeconds=Number.isFinite(sec)&&sec>=0?sec:null;state.nextDrawAt=Number.isFinite(at)&&at>1e12?at:(state.countdownSeconds===null?null:Date.now()+state.countdownSeconds*1000)}
-async function fetchLatest({silent=false}={}){if(state.loading)return;state.loading=true;try{const j=await getJSON('/draws/latest?format=json');const raw=getDrawFromLatest(j);const d=parseDraw(raw);if(!d)throw new Error('latest 响应中没有有效的 data.draw');const previous=state.records.find(r=>String(r.id)===String(d.id));if(d.keno.length!==20&&previous?.keno?.length===20)d.keno=previous.keno.slice();if(d.keno.length!==20)await maybeFetchKeno(d);state.latest=d;mergeDraws([d]);state.latest=state.records.find(r=>String(r.id)===String(d.id))||d;state.updatedAt=new Date();setCountdown(j);setStatus('API 已同步 · '+state.updatedAt.toLocaleTimeString('zh-CN',{hour12:false}));renderDraw();renderAnalytics();if(!silent&&state.latest)toast('最新开奖已同步：第 '+d.id+' 期')}catch(e){setStatus('API 暂不可用 · 保留已有数据','warn');if(!state.latest&&state.records.length){state.latest=state.records[state.records.length-1];renderDraw()}if(!silent)toast('同步失败：'+(e.message||'请检查网络'))}finally{state.loading=false}}
+function drawDataSignature(r){if(!r)return '';return [String(r.id??''),String(r.time??''),(r.digits||[]).join(','),String(r.sum??''),validKeno(r.keno).join(',')].join('|')}
+async function fetchLatest({silent=false}={}){
+  if(state.loading)return;state.loading=true;
+  try{
+    const previousSignature=drawDataSignature(latestDraw());
+    const j=await getJSON('/draws/latest?format=json');const raw=getDrawFromLatest(j);const d=parseDraw(raw);
+    if(!d)throw new Error('latest 响应中没有有效的 data.draw');
+    const previous=state.records.find(r=>String(r.id)===String(d.id));
+    if(d.keno.length!==20&&previous?.keno?.length===20)d.keno=previous.keno.slice();
+    if(d.keno.length!==20)await maybeFetchKeno(d);
+    state.latest=d;mergeDraws([d]);state.latest=state.records.find(r=>String(r.id)===String(d.id))||d;
+    state.updatedAt=new Date();setCountdown(j);setStatus('API 已同步 · '+state.updatedAt.toLocaleTimeString('zh-CN',{hour12:false}));
+    const changed=previousSignature!==drawDataSignature(state.latest);
+    if(changed){renderDraw();analyticsRenderSignature='';rollingForecastCacheKey='';renderAnalytics(true)}
+    else $('#metaUpdated').textContent=state.updatedAt.toLocaleString('zh-CN',{hour12:false});
+    if(!silent&&state.latest)toast('最新开奖已同步：第 '+d.id+' 期');
+  }catch(e){setStatus('API 暂不可用 · 保留已有数据','warn');if(!state.latest&&state.records.length){state.latest=state.records[state.records.length-1];renderDraw();analyticsRenderSignature='';renderAnalytics(true)}if(!silent)toast('同步失败：'+(e.message||'请检查网络'))}
+  finally{state.loading=false}
+}
 async function maybeFetchKeno(draw){const id=String(draw.id),now=Date.now();if((state.lastKenoAttempt[id]||0)>now-15000)return;state.lastKenoAttempt[id]=now;const cached=readKenoCache()[id];if(cached){draw.keno=validKeno(cached);if(draw.keno.length===20)return}try{const j=await getJSON('/draws/'+encodeURIComponent(id),6000);const raw=j?.data?.draw??j?.data?.item??j?.data;const k=validKeno(raw?.keno??raw?.keno20??raw?.keno_numbers??raw?.kenoNumbers);if(String(raw?.nbr??raw?.id??id)===id&&k.length===20){draw.keno=k;cacheKeno(id,k);return}}catch(_){} }
-async function fetchHistory({quiet=true}={}){try{const j=await getJSON('/draws?limit=200',12000);const items=j?.data?.items;if(!Array.isArray(items))throw new Error('历史响应中缺少 data.items');mergeDraws(items);if(typeof rollingForecastCacheKey!=='undefined')rollingForecastCacheKey='';state.historyLoaded=true;state.historyError='';if(!state.latest&&state.records.length)state.latest=state.records[state.records.length-1];if(state.latest){const r=state.records.find(x=>String(x.id)===String(state.latest.id));if(r&&r.keno.length===20)state.latest={...state.latest,keno:r.keno.slice()}}renderDraw();renderAnalytics();setStatus('API 已同步 · '+new Date().toLocaleTimeString('zh-CN',{hour12:false}));return true}catch(e){state.historyError=e.message||'history API 请求失败';state.historyLoaded=true;if(!quiet)toast('历史载入失败：'+state.historyError);renderAnalytics();return false}}
+async function fetchHistory({quiet=true}={}){try{const j=await getJSON('/draws?limit=200',12000);const items=j?.data?.items;if(!Array.isArray(items))throw new Error('历史响应中缺少 data.items');mergeDraws(items);rollingForecastCacheKey='';analyticsRenderSignature='';state.historyLoaded=true;state.historyError='';if(!state.latest&&state.records.length)state.latest=state.records[state.records.length-1];if(state.latest){const r=state.records.find(x=>String(x.id)===String(state.latest.id));if(r&&r.keno.length===20)state.latest={...state.latest,keno:r.keno.slice()}}renderDraw();renderAnalytics(true);setStatus('API 已同步 · '+new Date().toLocaleTimeString('zh-CN',{hour12:false}));return true}catch(e){state.historyError=e.message||'history API 请求失败';state.historyLoaded=true;if(!quiet)toast('历史载入失败：'+state.historyError);analyticsRenderSignature='';renderAnalytics(true);return false}}
 function latestDraw(){return state.latest||state.records[state.records.length-1]||null}
+let scratchPrivacySnapshot=null;
+let analyticsRenderSignature="";
 function drawTags(r){const s=r.sum;const tags=[{v:s<=13?'小':'大',c:''},{v:s%2?'单':'双',c:'blue'},{v:r.combo,c:'amber'},{v:r.shape,c:'violet'},{v:'龙虎 '+r.dragon,c:'blue'},{v:'边数 '+r.edge,c:''},{v:'和值 '+s,c:'amber'}];$('#drawTags').innerHTML=tags.map(x=>`<span class="chip ${x.c}">${x.v}</span>`).join('')}
-function renderDraw(){const r=latestDraw();if(!r)return;const prevId=lastRenderedDrawId;lastRenderedDrawId=String(r.id);if(prevId&&prevId!==lastRenderedDrawId&&soundEnabled)playTripleChime();$('#periodNo').textContent=r.id;$('#drawTimeInline').textContent=normalizeTime(r.time);$('#drawBalls').innerHTML=`<span class="ball">${r.digits[0]}</span><span class="op">+</span><span class="ball b2">${r.digits[1]}</span><span class="op">+</span><span class="ball b3">${r.digits[2]}</span><span class="op">=</span><span class="ball sum">${r.sum}</span>`;$('#drawCombo').textContent=`组合：${r.combo} · ${r.sum%2?'单':'双'}`;$('#drawShape').textContent=`形态：${r.shape}`;$('#drawStatus').innerHTML='<i class="dot"></i> 已开奖';drawTags(r);$('#metaDrawTime').textContent=normalizeTime(r.time);const valid=r.digits.length===3&&r.digits.every(n=>Number.isInteger(n)&&n>=0&&n<=9)&&r.sum===sumOf(r);$('#metaValidate').textContent=valid?'换算校验通过':'校验异常';$('#metaValidate').style.color=valid?'var(--mint)':'var(--rose)';$('#metaUpdated').textContent=state.updatedAt?state.updatedAt.toLocaleString('zh-CN',{hour12:false}):'使用缓存数据';$('#metaNextTime').textContent=state.nextDrawAt?new Date(state.nextDrawAt).toLocaleString('zh-CN',{hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'API 暂未提供';const nums=validKeno(r.keno);$('#kenoState').textContent=nums.length===20?'已载入 20 球':(readKenoCache()[String(r.id)]?'正在恢复号码':'API 未返回 Keno 20 球');$('#kenoGrid').innerHTML=nums.length===20?nums.map(n=>`<div class="keno-ball">${n}</div>`).join(''):'<div class="tag" style="grid-column:1/-1;justify-content:center;padding:12px">API 未返回 Keno 20 号码；其余开奖与预测数据仍可正常使用。</div>';if(scratchEnabled&&prevId!==lastRenderedDrawId)requestAnimationFrame(sizeScratchCanvas)}
+function renderDraw(){
+  const r=latestDraw();if(!r)return;
+  const prevId=lastRenderedDrawId;
+  lastRenderedDrawId=String(r.id);
+  const isNewDraw=!!prevId&&prevId!==lastRenderedDrawId;
+  if(isNewDraw&&soundEnabled)playTripleChime();
+  $('#periodNo').textContent=r.id;
+  const drawTimeText=normalizeTime(r.time);
+  $('#drawTimeInline').textContent=drawTimeText;
+  const heroTime=$('#heroDrawTime');
+  if(heroTime){
+    heroTime.textContent=drawTimeText;
+    if(!prevId||isNewDraw){heroTime.classList.remove('time-changed');void heroTime.offsetWidth;heroTime.classList.add('time-changed')}
+  }
+  $('#drawBalls').innerHTML=`<span class="ball">${r.digits[0]}</span><span class="op">+</span><span class="ball b2">${r.digits[1]}</span><span class="op">+</span><span class="ball b3">${r.digits[2]}</span><span class="op">=</span><span class="ball sum">${r.sum}</span>`;
+  $('#drawCombo').textContent=`组合：${r.combo} · ${r.sum%2?'单':'双'}`;
+  $('#drawShape').textContent=`形态：${r.shape}`;
+  $('#drawStatus').innerHTML='<i class="dot"></i> 已开奖';
+  drawTags(r);
+  $('#metaDrawTime').textContent=drawTimeText;
+  const valid=r.digits.length===3&&r.digits.every(n=>Number.isInteger(n)&&n>=0&&n<=9)&&r.sum===sumOf(r);
+  $('#metaValidate').textContent=valid?'换算校验通过':'校验异常';
+  $('#metaValidate').style.color=valid?'var(--mint)':'var(--rose)';
+  $('#metaUpdated').textContent=state.updatedAt?state.updatedAt.toLocaleString('zh-CN',{hour12:false}):'使用缓存数据';
+  $('#metaNextTime').textContent=state.nextDrawAt?new Date(state.nextDrawAt).toLocaleString('zh-CN',{hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'API 暂未提供';
+  const nums=validKeno(r.keno);
+  $('#kenoState').textContent=nums.length===20?'已载入 20 球':(readKenoCache()[String(r.id)]?'正在恢复号码':'API 未返回 Keno 20 球');
+  $('#kenoGrid').innerHTML=nums.length===20?nums.map(n=>`<div class="keno-ball">${n}</div>`).join(''):'<div class="tag" style="grid-column:1/-1;justify-content:center;padding:12px">API 未返回 Keno 20 号码；其余开奖与预测数据仍可正常使用。</div>';
+  if(scratchEnabled)refreshScratchPrivacyAfterRender();
+  if(scratchEnabled&&isNewDraw)requestAnimationFrame(sizeScratchCanvas);
+}
 function renderCountdown(){const e=$('#countdownText'),hint=$('#countdownHint');if(!state.nextDrawAt){e.textContent='--:--';hint.textContent='等待 API 下期开奖时间';return}const remain=Math.max(0,Math.ceil((state.nextDrawAt-Date.now())/1000));e.textContent=String(Math.floor(remain/60)).padStart(2,'0')+':'+String(remain%60).padStart(2,'0');hint.textContent=remain===0?'等待 API 更新开奖状态':'以 API 下期开奖时间为基准；页面每 3 秒同步一次'}
 function windowN(){return Number($('#windowSelect').value)||50}
 function probabilityWindow(hist,n){const tail=hist.slice(-n);const counts=Array(28).fill(0);for(const r of tail)counts[r.sum]++;const shrink=Math.max(4,Math.round(n*.16));return counts.map((v,i)=>(v+shrink*theoryP[i])/(tail.length+shrink||1))}
@@ -1401,6 +1612,32 @@ function fourSumCandidates(hist,focus){
   }
   return {items:picked.slice(0,4),models};
 }
+function goblinFourSumCandidates(hist,focus=windowN()){
+  if(!Array.isArray(hist)||!hist.length)return [];
+  const recent=hist.slice(-Math.max(1,Math.min(200,Number(focus)||50)));
+  const prediction=goblinPredictNext(recent.at(-1));
+  if(!prediction)return [];
+  const scores=getScores(recent,recent.length);
+  const allowed=new Set(prediction.threeDoor||[]);
+  // Goblin's original output is group-oriented. Expand its three-door groups into four sum candidates.
+  // Within eligible groups, preserve the KA28 sum score ordering; this is a transparent hybrid mapping.
+  const rankedSums=scores.map((score,sum)=>({sum,score,group:comboOf(sum)}))
+    .filter(x=>allowed.has(x.group))
+    .sort((a,b)=>b.score-a.score||a.sum-b.sum);
+  const chosen=rankedSums.slice(0,4);
+  if(chosen.length<4){
+    const seen=new Set(chosen.map(x=>x.sum));
+    for(const x of scores.map((score,sum)=>({sum,score,group:comboOf(sum)})).sort((a,b)=>b.score-a.score||a.sum-b.sum)){
+      if(chosen.length>=4)break;if(seen.has(x.sum))continue;seen.add(x.sum);chosen.push(x);
+    }
+  }
+  return chosen.slice(0,4).map((x,i)=>({...x,rank:i+1,group:comboOf(x.sum),source:allowed.has(x.group)?'星轨三门':'融合补位'}));
+}
+function renderGoblinFourAndCompare(hist){
+  // 哥布林四码现在逐期显示在“真实开奖预测记录”的哥布林算法模块下；不再渲染独立四码排行榜。
+  return;
+}
+
 function renderPrediction(hist){
   const focus=windowN(),used=Math.min(hist.length,focus);
   $('#historyCount').textContent=hist.length+' 期历史';
@@ -1514,6 +1751,78 @@ function closeAlgoSheet(clear=true){
   clearTimeout(sheetCloseTimer);sheetCloseTimer=setTimeout(()=>{if(!selectedAlgoIds.size){if(sheet)sheet.hidden=true;if(backdrop)backdrop.hidden=true}},240);
   const count=$('#sheetSelectionCount');if(count)count.textContent=selectedAlgoIds.size?`当前算法：${[...selectedAlgoIds][0]}`:'当前未打开算法';
 }
+/* Goblin original algorithm port (adapted from 哥布林顶级预测_发布版.html).
+   A draw passed to goblinPredictNext() is the previous completed draw; outputs apply to the next issue. */
+const GOBLIN_COMBOS=['大双','大单','小双','小单'];
+const GOBLIN_BUCKETS=[[0,4,6,9,12,15,18,21,24,27],[1,4,7,10,13,16,19,22,25],[2,5,8,11,14,17,20,23,26]];
+const GOBLIN_SAME_SEQUENCE={'小双':['小双','大双','大单'],'小单':['小单','大单','大双'],'大双':['大双','小双','小单'],'大单':['大单','小单','小双']};
+const GOBLIN_DIFF_SEQUENCE={'小双':['小双','小单','大单'],'小单':['小单','小双','大双'],'大双':['大双','大单','小单'],'大单':['大单','大双','小双']};
+const GOBLIN_NO_MATCH={'小双':['小双','小单','大双'],'小单':['小单','小双','大单'],'大双':['大双','小双','大单'],'大单':['大单','大双','小双']};
+function goblinGroupOf(sum){return (sum<14?'小':'大')+(sum%2===0?'双':'单')}
+function goblinBucketIds(value){const out=[];GOBLIN_BUCKETS.forEach((set,index)=>{if(set.includes(value))out.push(index)});return out}
+function goblinBucketsOverlap(a,b){const aa=goblinBucketIds(a),bb=goblinBucketIds(b);return aa.some(x=>bb.includes(x))}
+function goblinSeededRandom(seed){let x=seed;return function(){x=(1831565813+(0|x))|0;let t=Math.imul(x^(x>>>15),1|x);t^=Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296}}
+function goblinPredictNext(draw){
+  if(!draw)return null;
+  const nums=Array.isArray(draw.digits)&&draw.digits.length===3?draw.digits:(Array.isArray(draw.nums)&&draw.nums.length===3?draw.nums:null);
+  const sum=Number(draw.sum),issue=String(draw.id??draw.expect??'');
+  if(!nums||!nums.every(n=>Number.isInteger(n)&&n>=0&&n<=9)||!Number.isFinite(sum)||sum<0||sum>27)return null;
+  const type=goblinGroupOf(sum);
+  const seed=1000*parseInt(issue||'0',10)+(100*nums[0]+10*nums[1]+nums[2]);
+  const random=goblinSeededRandom(Number.isFinite(seed)?seed:1);
+  const warmup=Math.max(Math.max(...nums),1);let randomValue=0;
+  for(let i=0;i<warmup;i++)randomValue=random();
+  const fractionText=((Number((.5*randomValue+.05).toFixed(8))*(sum||0)).toFixed(10).split('.')[1]||'000').slice(0,3).padEnd(3,'0');
+  const generatedDigits=fractionText.split('').map(Number);
+  const generatedSum=generatedDigits.reduce((a,b)=>a+b,0);
+  const hasDigitOverlap=generatedDigits.some(n=>nums.includes(n));
+  const bucketsMatch=goblinBucketsOverlap(generatedSum,sum);
+  const branch=!hasDigitOverlap?'no-match':(bucketsMatch?'same-sequence':'different-sequence');
+  const sequence=branch==='same-sequence'?GOBLIN_SAME_SEQUENCE[type]:(branch==='different-sequence'?GOBLIN_DIFF_SEQUENCE[type]:GOBLIN_NO_MATCH[type]);
+  let predicted=[...(sequence||[])].filter(g=>GOBLIN_COMBOS.includes(g)).slice(0,3);
+  if(!predicted.length)predicted=[...(GOBLIN_NO_MATCH[type]||[])].slice(0,3);
+  while(predicted.length<3){const next=GOBLIN_COMBOS.find(g=>!predicted.includes(g));if(!next)break;predicted.push(next)}
+  predicted=[...new Set(predicted.slice(0,3))];
+  const transformed=sum/10*109.446,decimal=transformed-Math.floor(transformed);
+  const kill=GOBLIN_COMBOS[Math.floor(4*decimal)%4];
+  let nonKill=predicted.filter(g=>g!==kill);
+  while(nonKill.length<2){const next=GOBLIN_COMBOS.find(g=>g!==kill&&!nonKill.includes(g));if(!next)break;nonKill.push(next)}
+  if(nonKill.length<2)nonKill=GOBLIN_COMBOS.filter(g=>g!==kill).slice(0,2);
+  const main=nonKill[0],second=nonKill[1];
+  const third=GOBLIN_COMBOS.find(g=>g!==main&&g!==second&&g!==kill);
+  const threeDoor=[main,second,third].filter(Boolean);
+  while(threeDoor.length<3){const next=GOBLIN_COMBOS.find(g=>!threeDoor.includes(g)&&g!==kill);if(next)threeDoor.push(next);else break}
+  return {kill,doubleGroups:[main,second],threeDoor,main,second,third:third||null,type,inputIssue:issue,generatedDigits,generatedSum,branch};
+}
+function goblinIsSpecialProtected(sum){return sum===13||sum===14}
+function goblinEvaluate(prediction,actualSum){
+  if(!prediction||!Number.isFinite(actualSum))return {killHit:null,doubleHit:null,threeDoorHit:null,special:false};
+  const actualGroup=comboOf(actualSum),special=goblinIsSpecialProtected(actualSum);
+  // Preserve the original Goblin verifier's 13/14 special-case rule for kill and double-group scoring.
+  return {killHit:special||actualGroup!==prediction.kill,doubleHit:special||prediction.doubleGroups.includes(actualGroup),threeDoorHit:prediction.threeDoor.includes(actualGroup),special,actualGroup};
+}
+function nextIssueLabel(issue){const text=String(issue??'');return /^\d+$/.test(text)?String(Number(text)+1).padStart(text.length,'0'):'下一期'}
+function renderGoblinPrediction(hist){
+  const status=$('#goblinStatus'),killEl=$('#goblinKill'),poolEl=$('#goblinPool'),betsEl=$('#goblinBets');
+  const fourEl=$('#goblinFourCodes'),fourNote=$('#goblinFourNote');
+  const showFourPlaceholders=(note='等待历史数据')=>{if(fourEl)fourEl.innerHTML=Array.from({length:4},(_,i)=>`<div class="sum-four-card"><span class="sum-four-kicker">星轨 0${i+1}</span><strong>—</strong><small>${esc(note)}</small></div>`).join('');if(fourNote)fourNote.textContent=note;};
+  if(!hist||!hist.length){status.textContent='等待历史数据';killEl.textContent=poolEl.textContent='—';betsEl.innerHTML='<span class="tag">等待历史数据</span>';showFourPlaceholders();return}
+  const latest=hist[hist.length-1],prediction=goblinPredictNext(latest);
+  if(!prediction){status.textContent='数据格式待校验';killEl.textContent=poolEl.textContent='—';betsEl.innerHTML='<span class="tag">当前开奖记录缺少有效号码</span>';showFourPlaceholders('当前记录格式待校验');return}
+  const nextIssue=nextIssueLabel(latest.id??latest.expect);
+  status.textContent='星轨规则 · 已计算';
+  killEl.textContent=prediction.kill;
+  $('#goblinKillNote').textContent=`依据第 ${latest.id??latest.expect} 期 · 和值 ${latest.sum}`;
+  poolEl.textContent=prediction.threeDoor.join(' / ');
+  $('#goblinPoolNote').textContent='星轨三门输出，排除本模型杀号组';
+  $('#goblinPeriod').textContent=`预测第 ${nextIssue} 期`;
+  betsEl.innerHTML=prediction.doubleGroups.map((g,i)=>`<div class="combo-pill"><b>${esc(g)}</b><small>星轨双组 ${i+1}</small></div>`).join('');
+  const fourCodes=goblinFourSumCandidates(hist,windowN());
+  if(fourEl){fourEl.innerHTML=fourCodes.map((item,i)=>`<div class="sum-four-card"><span class="sum-four-kicker">星轨 0${i+1}</span><strong>${item.sum}</strong><small>${esc(item.group)} · ${esc(item.source)}</small></div>`).join('');if(!fourCodes.length)showFourPlaceholders('样本不足');}
+  if(fourNote)fourNote.textContent=`用于预测第 ${nextIssue} 期；输入截至第 ${latest.id??latest.expect} 期。四码按星轨三门筛选并结合当前和值评分排序，属于扩展候选，不是原版直接输出。`;
+  $('#goblinExplain').textContent=`星轨算法沿用原版哥布林种子、序列分支与 109.446 转换；输入为第 ${latest.id??latest.expect} 期已开奖数据，输出用于下一期。原版将实际和值 13/14 作为杀号与双组特殊保护命中。历史表现不保证未来结果。`;
+}
+
 function renderKillPrediction(hist){
   const modelWindow=hist.slice(-windowN());
   if(!modelWindow.length){
@@ -1536,11 +1845,42 @@ function renderKillPrediction(hist){
   renderAlgoLeaderboard(modelWindow,models);
 }
 function playTripleChime(){try{const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return;audioContext=audioContext||new Ctx();if(audioContext.state==='suspended')audioContext.resume();[880,988,1175].forEach((f,i)=>{const start=audioContext.currentTime+i*.17;const osc=audioContext.createOscillator(),gain=audioContext.createGain();osc.type='sine';osc.frequency.setValueAtTime(f,start);gain.gain.setValueAtTime(.0001,start);gain.gain.exponentialRampToValueAtTime(.12,start+.025);gain.gain.exponentialRampToValueAtTime(.0001,start+.14);osc.connect(gain);gain.connect(audioContext.destination);osc.start(start);osc.stop(start+.15)})}catch(e){console.warn('提示音不可用',e)}}
-function sizeScratchCanvas(){const canvas=$('#scratchCanvas'),zone=$('#scratchZone');if(!canvas||!zone)return;const r=zone.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);if(r.width<2||r.height<2)return;canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';const ctx=canvas.getContext('2d');scratchContext=ctx;ctx.setTransform(dpr,0,0,dpr,0,0);const g=ctx.createLinearGradient(0,0,r.width,r.height);g.addColorStop(0,'#cdd7e0');g.addColorStop(.25,'#eef3f7');g.addColorStop(.5,'#9eacb8');g.addColorStop(.75,'#e3eaf0');g.addColorStop(1,'#a5b1bd');ctx.globalCompositeOperation='source-over';ctx.fillStyle=g;ctx.fillRect(0,0,r.width,r.height);ctx.strokeStyle='rgba(255,255,255,.34)';ctx.lineWidth=1;for(let x=-r.height;x<r.width;x+=18){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+r.height,r.height);ctx.stroke()}ctx.fillStyle='rgba(23,40,57,.88)';ctx.textAlign='center';ctx.font='800 17px system-ui,sans-serif';ctx.fillText('KA28开奖网',r.width/2,r.height/2-5);ctx.font='600 11px system-ui,sans-serif';ctx.fillText('刮开查看数字与和值',r.width/2,r.height/2+17)}
-function openScratch(){scratchEnabled=true;$('#scratchCanvas').classList.add('active');$('#scratchBtn').textContent='收起咪牌';requestAnimationFrame(sizeScratchCanvas);toast('咪牌已开启，刮开查看开奖号码')}
-function closeScratch(){scratchEnabled=false;$('#scratchCanvas').classList.remove('active');$('#scratchBtn').textContent='咪牌';scratchLastPoint=null;scratchMoved=0;}
+function sizeScratchCanvas(){const canvas=$('#scratchCanvas'),zone=$('#scratchSurface');if(!canvas||!zone)return;const r=zone.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);if(r.width<2||r.height<2)return;canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';const ctx=canvas.getContext('2d');scratchContext=ctx;ctx.setTransform(dpr,0,0,dpr,0,0);const g=ctx.createLinearGradient(0,0,r.width,r.height);g.addColorStop(0,'#cdd7e0');g.addColorStop(.25,'#eef3f7');g.addColorStop(.5,'#9eacb8');g.addColorStop(.75,'#e3eaf0');g.addColorStop(1,'#a5b1bd');ctx.globalCompositeOperation='source-over';ctx.fillStyle=g;ctx.fillRect(0,0,r.width,r.height);ctx.strokeStyle='rgba(255,255,255,.34)';ctx.lineWidth=1;for(let x=-r.height;x<r.width;x+=18){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+r.height,r.height);ctx.stroke()}ctx.fillStyle='rgba(23,40,57,.88)';ctx.textAlign='center';ctx.font='800 17px system-ui,sans-serif';ctx.fillText('KA28开奖网',r.width/2,r.height/2-5);ctx.font='600 11px system-ui,sans-serif';ctx.fillText('刮开查看数字与和值',r.width/2,r.height/2+17)}
+function captureScratchDetails(){return {combo:$('#drawCombo').innerHTML,shape:$('#drawShape').innerHTML,tags:$('#drawTags').innerHTML}}
+function maskScratchDetails(){
+  const combo=$('#drawCombo'),shape=$('#drawShape'),tags=$('#drawTags');
+  if(!scratchPrivacySnapshot)scratchPrivacySnapshot=captureScratchDetails();
+  combo.textContent='组合：—';shape.textContent='形态：—';
+  const holder=document.createElement('div');holder.innerHTML=scratchPrivacySnapshot.tags||'';
+  const count=Math.max(5,holder.children.length||0);
+  tags.innerHTML=Array.from({length:count},()=>'<span class="chip">—</span>').join('');
+}
+function refreshScratchPrivacyAfterRender(){if(!scratchEnabled)return;scratchPrivacySnapshot=captureScratchDetails();maskScratchDetails()}
+function restoreScratchDetails(){if(!scratchPrivacySnapshot)return;$('#drawCombo').innerHTML=scratchPrivacySnapshot.combo;$('#drawShape').innerHTML=scratchPrivacySnapshot.shape;$('#drawTags').innerHTML=scratchPrivacySnapshot.tags;scratchPrivacySnapshot=null}
+function openScratch(){
+  if(scratchEnabled)return;
+  scratchPrivacySnapshot=captureScratchDetails();scratchEnabled=true;maskScratchDetails();
+  $('#scratchCanvas').classList.add('active');$('#scratchBtn').textContent='收起咪牌';
+  requestAnimationFrame(sizeScratchCanvas);toast('咪牌已开启，组合、形态与分类提示已隐藏；刮开查看开奖号码');
+}
+function closeScratch(){
+  scratchEnabled=false;$('#scratchCanvas').classList.remove('active');$('#scratchBtn').textContent='咪牌';
+  scratchLastPoint=null;scratchMoved=0;restoreScratchDetails();
+}
 function scratchPoint(e){const r=$('#scratchCanvas').getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
-function eraseScratch(e){if(!scratchEnabled||!scratchContext)return;const canvas=$('#scratchCanvas'),p=scratchPoint(e);scratchContext.globalCompositeOperation='destination-out';scratchContext.lineWidth=34;scratchContext.lineCap='round';scratchContext.lineJoin='round';scratchContext.beginPath();if(scratchLastPoint){scratchContext.moveTo(scratchLastPoint.x,scratchLastPoint.y);scratchContext.lineTo(p.x,p.y)}else scratchContext.arc(p.x,p.y,17,0,Math.PI*2);scratchContext.stroke();scratchContext.globalCompositeOperation='source-over';scratchLastPoint=p;scratchMoved++;if(scratchMoved%5===0&&canvas.width*canvas.height<5e6){const ctx=canvas.getContext('2d');const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;let clear=0,total=0;for(let i=3;i<data.length;i+=4*80){total++;if(data[i]<30)clear++}if(total&&clear/total>.43){closeScratch();toast('已刮开，开奖号码已显示')}}}
+function eraseScratch(e){
+  if(!scratchEnabled||!scratchContext)return;
+  const canvas=$('#scratchCanvas'),p=scratchPoint(e);
+  scratchContext.globalCompositeOperation='destination-out';scratchContext.lineWidth=44;scratchContext.lineCap='round';scratchContext.lineJoin='round';scratchContext.beginPath();
+  if(scratchLastPoint){scratchContext.moveTo(scratchLastPoint.x,scratchLastPoint.y);scratchContext.lineTo(p.x,p.y)}else scratchContext.arc(p.x,p.y,22,0,Math.PI*2);
+  scratchContext.stroke();scratchContext.globalCompositeOperation='source-over';scratchLastPoint=p;scratchMoved++;
+  // Sample less frequently and skip oversized canvases to keep touch interaction smooth.
+  if(scratchMoved%12===0&&canvas.width*canvas.height<8e6){
+    const ctx=canvas.getContext('2d');const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;let clear=0,total=0;
+    for(let i=3;i<data.length;i+=4*160){total++;if(data[i]<30)clear++}
+    if(total&&clear/total>.43){closeScratch();toast('已刮开，开奖号码已显示')}
+  }
+}
 function setTheme(mode){const next=mode==='light'?'light':'dark';document.documentElement.dataset.theme=next;document.documentElement.style.colorScheme=next;document.body.dataset.theme=next;safeSet('ka28.lab.theme',next);const btn=$('#themeBtn');if(btn){btn.textContent=next==='light'?'🌙':'☀️';btn.title=next==='light'?'切换到暗色主题':'切换到亮色主题';btn.setAttribute('aria-label',btn.title)}const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=next==='light'?'#edf4fb':'#09121e'}
 
 function omissionOf(hist,fn){for(let i=hist.length-1,gap=0;i>=0;i--,gap++)if(fn(hist[i]))return gap;return hist.length}
@@ -1552,7 +1892,8 @@ let rollingForecastCacheKey='',rollingForecastCache=[];
 const MIN_FORECAST_HISTORY=40;
 function rollingForecasts(count){
   const all=currentRecords(),focus=windowN(),wanted=Math.max(1,Math.min(50,Number(count)||20));
-  const key=[all.length,all[0]?.id,all.at(-1)?.id,focus,wanted].join('|');
+  const relevant=all.slice(-Math.min(all.length,focus+wanted)).map(r=>`${r.id}:${r.sum}:${r.digits.join('')}`).join(';');
+  const key=[focus,wanted,relevant].join('|');
   if(key===rollingForecastCacheKey)return rollingForecastCache;
   const out=[];
   // For each completed API draw, predict it from prior draws only. The target result never enters its own model.
@@ -1573,6 +1914,11 @@ function rollingForecasts(count){
     const other=FOUR_GROUPS.filter(g=>g!==kill).sort((a,b)=>(model.tally[b]||0)-(model.tally[a]||0));
     const comboTwo=other.slice(0,2),comboThree=other.slice(0,3),threeGroups=Array.isArray(three?.groups)?three.groups.slice():[];
     const actualSum=Number(target.sum),actualCombo=comboOf(actualSum);
+    // Goblin must be run against the preceding completed draw, never the target's own result.
+    const goblin=goblinPredictNext(prior[prior.length-1]);
+    if(!goblin)continue;
+    const goblinEval=goblinEvaluate(goblin,actualSum);
+    const goblinSums=goblinFourSumCandidates(prior,focus).map(x=>Number(x.sum)).filter(n=>Number.isInteger(n)&&n>=0&&n<=27).slice(0,4);
     out.push({
       id:String(target.id),time:String(target.time||''),digits:target.digits.slice(),actualCombo,actualSum,
       kill,comboTwo,comboThree,threeGroups,sums,
@@ -1580,7 +1926,8 @@ function rollingForecasts(count){
       comboHit:comboTwo.includes(actualCombo),
       comboThreeHit:comboThree.includes(actualCombo),
       threeHit:threeGroups.includes(actualCombo),
-      sumHit:sums.includes(actualSum),
+      sumHit:sums.includes(actualSum),goblinSums,goblinSumHit:goblinSums.includes(actualSum),
+      goblin,goblinKillHit:goblinEval.killHit,goblinDoubleHit:goblinEval.doubleHit,goblinThreeDoorHit:goblinEval.threeDoorHit,goblinSpecial:goblinEval.special,
       source:'API',priorCount:prior.length
     });
   }
@@ -1595,17 +1942,32 @@ function forecastCard(r,compact=false){
   return `<article class="forecast-round-card live-forecast-card ${compact?'is-compact':''}">
     <div class="forecast-row-head"><div class="forecast-period"><b>第 ${esc(r.id)} 期</b><small>${esc(normalizeTime(r.time))}</small></div><div class="forecast-actual"><span>真实开奖</span><b>${r.digits.map(n=>esc(n)).join(' + ')} = ${r.actualSum}</b><small>${esc(r.actualCombo)}</small></div></div>
     <div class="forecast-prediction-grid">
-      <div class="forecast-prediction-cell"><span class="forecast-cell-label">杀组预测</span><b class="forecast-kill-value">${esc(r.kill)}</b>${hitBadge(r.killHit,'杀中','未杀中')}</div>
-      <div class="forecast-prediction-cell"><span class="forecast-cell-label">二门组合</span><div class="forecast-combo-values">${r.comboTwo.map(g=>`<span class="round-combo">${esc(g)}</span>`).join('')}</div>${hitBadge(r.comboHit,'命中','未中')}</div>
-      <div class="forecast-prediction-cell"><span class="forecast-cell-label">和值四码</span><div class="forecast-sum-values">${sumPills}</div>${hitBadge(r.sumHit,'命中','未中')}</div>
+      <div class="forecast-prediction-cell"><span class="forecast-cell-label">KA28 杀组预测</span><b class="forecast-kill-value">${esc(r.kill)}</b>${hitBadge(r.killHit,'杀中','未杀中')}</div>
+      <div class="forecast-prediction-cell"><span class="forecast-cell-label">KA28 二门组合</span><div class="forecast-combo-values">${r.comboTwo.map(g=>`<span class="round-combo">${esc(g)}</span>`).join('')}</div>${hitBadge(r.comboHit,'命中','未中')}</div>
+      <div class="forecast-prediction-cell"><span class="forecast-cell-label">KA28 融合和值四码</span><div class="forecast-sum-values">${sumPills}</div>${hitBadge(r.sumHit,'命中','未中')}</div>
     </div>
-    ${compact?'':`<div class="forecast-more-detail"><div><span>三组组合参考</span><b>${r.comboThree.map(esc).join(' / ')}</b>${hitBadge(r.comboThreeHit,'覆盖','未覆盖')}</div><div><span>三门参考</span><b>${r.threeGroups.length?r.threeGroups.map(esc).join(' / '):'样本不足'}</b>${r.threeGroups.length?hitBadge(r.threeHit,'覆盖','未覆盖'):'<span class="forecast-hit neutral">样本不足</span>'}</div><small>本期预测仅使用此前 ${r.priorCount} 期历史；开奖号码与和值来自 API 实际开奖。</small></div>`}
+    <section class="forecast-goblin-record" aria-label="哥布林·星轨算法真实开奖回测">
+      <div class="forecast-goblin-head"><b>🐲 哥布林·星轨算法</b><span>输入：第 ${esc(r.goblin.inputIssue)} 期 · 预测：第 ${esc(r.id)} 期</span></div>
+      <div class="forecast-goblin-grid">
+        <div class="forecast-goblin-cell"><small>星轨杀号组</small><b class="goblin-kill-text">${esc(r.goblin.kill)}</b>${hitBadge(r.goblinKillHit,'杀中','未杀中')}</div>
+        <div class="forecast-goblin-cell"><small>星轨双组</small><b>${r.goblin.doubleGroups.map(esc).join(' / ')}</b>${hitBadge(r.goblinDoubleHit,'命中','未中')}</div>
+        <div class="forecast-goblin-cell"><small>星轨三门</small><b>${r.goblin.threeDoor.map(esc).join(' / ')}</b>${hitBadge(r.goblinThreeDoorHit,'覆盖','未覆盖')}</div>
+      </div>
+      ${r.goblinSpecial?'<small class="forecast-goblin-note">本期真实和值为 13/14，按原版哥布林特殊保护规则计杀号/双组命中。</small>':''}
+      <div class="forecast-goblin-four-inline">
+        <div class="forecast-goblin-head"><b>🎯 星轨四码参考</b><span>和值候选 · 逐期回测</span></div>
+        <div class="forecast-sum-values">${(r.goblinSums||[]).map(n=>`<span class="forecast-sum-pill">${n}</span>`).join('')}</div>
+        ${hitBadge(!!r.goblinSumHit,'四码命中','四码未中')}
+        <small class="forecast-goblin-note">该期星轨四码只依据第 ${esc(r.goblin.inputIssue)} 期及之前可用历史生成；属于星轨分组映射后的扩展和值候选。</small>
+      </div>
+    </section>
+    ${compact?'':`<div class="forecast-more-detail"><div><span>KA28 三组组合参考</span><b>${r.comboThree.map(esc).join(' / ')}</b>${hitBadge(r.comboThreeHit,'覆盖','未覆盖')}</div><div><span>KA28 三门参考</span><b>${r.threeGroups.length?r.threeGroups.map(esc).join(' / '):'样本不足'}</b>${r.threeGroups.length?hitBadge(r.threeHit,'覆盖','未覆盖'):'<span class="forecast-hit neutral">样本不足</span>'}</div><small>本期开奖来自 API；KA28 与哥布林预测都只使用对应期开奖之前可用的数据。</small></div>`}
   </article>`;
 }
 function forecastStats(rows){
   const count=rows.length;
-  const metrics=[['杀组',r=>r.killHit],['二门组合',r=>r.comboHit],['三组组合',r=>r.comboThreeHit],['和值四码',r=>r.sumHit]];
-  return `<div class="forecast-stats-grid">${metrics.map(([name,fn])=>{const hit=rows.filter(fn).length;return `<div class="forecast-stat"><span>${name}命中</span><b>${hit}/${count||0}</b><small>${count?(hit/count*100).toFixed(1)+'%':'—'}</small></div>`}).join('')}</div><p class="forecast-stats-caption">统计样本 ${count} 期 · 全部以对应期次的真实 API 开奖结果逐项比对；无开奖结果的预测不进入分母。</p>`;
+  const metrics=[['KA28 杀组',r=>r.killHit],['KA28 二门',r=>r.comboHit],['KA28 三组',r=>r.comboThreeHit],['KA28 融合四码',r=>r.sumHit],['星轨四码',r=>r.goblinSumHit],['哥布林杀组',r=>r.goblinKillHit],['星轨双组',r=>r.goblinDoubleHit],['星轨三门',r=>r.goblinThreeDoorHit]];
+  return `<div class="forecast-stats-grid">${metrics.map(([name,fn])=>{const hit=rows.filter(fn).length;return `<div class="forecast-stat"><span>${name}命中</span><b>${hit}/${count||0}</b><small>${count?(hit/count*100).toFixed(1)+'%':'—'}</small></div>`}).join('')}</div><p class="forecast-stats-caption">统计样本 ${count} 期 · 各项均与 API 实际开奖结果逐期比对；星轨算法每期仅读取前一期号码/和值并复用原版哥布林逻辑。原版规定实际和值 13/14 对杀号及双组计特殊命中；三门覆盖率仍按实际组合直接判断。</p>`;
 }
 function renderForecastSheet(rows){
   const body=$('#algoSheetBody');if(!body)return;
@@ -1639,9 +2001,15 @@ function renderForecastRounds(){
   const btn=$('#forecastMoreBtn');if(btn)btn.disabled=!rows.length;
   if(sheetMode==='forecasts'&&$('#algoSheet')&&!$('#algoSheet').hidden)renderForecastSheet(rows);
 }
-function renderAnalytics(){const hist=currentRecords();renderPrediction(hist);renderKillPrediction(hist);renderOmissions(hist);renderRecent(hist);renderForecastRounds()}
-function renderTick(){renderCountdown();requestAnimationFrame(()=>{})}
-async function boot(){const savedTheme=safeGet('ka28.lab.theme')||'light';setTheme(savedTheme);restoreCache();if(state.records.length){state.latest=state.records[state.records.length-1];renderDraw();renderAnalytics();setStatus('显示缓存数据 · 正在联网校准','warn')}const tasks=await Promise.allSettled([fetchLatest({silent:true}),fetchHistory({quiet:true})]);if(!state.latest&&state.records.length)state.latest=state.records[state.records.length-1];renderDraw();renderAnalytics();renderCountdown();setInterval(renderTick,1000);setInterval(()=>fetchLatest({silent:true}),3000);setInterval(()=>{if(!state.historyLoaded||state.records.length<30||state.historyError)fetchHistory({quiet:true})},30000);$('#refreshBtn').addEventListener('click',async()=>{await fetchLatest();await fetchHistory({quiet:true});renderAnalytics()});$('#windowSelect').addEventListener('change',()=>{killModelCacheKey='';renderAnalytics()});$('#algoLeaderboard').addEventListener('click',e=>{const row=e.target.closest('button[data-algo-id]');if(!row)return;const id=row.dataset.algoId;selectedAlgoIds.clear();selectedAlgoIds.add(id);document.querySelectorAll('#algoLeaderboard [data-algo-id]').forEach(item=>{const active=item.dataset.algoId===id;item.classList.toggle('is-active',active);item.setAttribute('aria-pressed',String(active))});renderAlgoSheet()});$('#algoSheetBody').addEventListener('change',e=>{if(e.target.id==='sheetRangeBacktest')applyRangeTuning(false)});$('#algoSheetBody').addEventListener('click',e=>{if(e.target.closest('#sheetAutoRangeBtn'))applyRangeTuning(true)});$('#closeAlgoSheet').addEventListener('click',()=>closeAlgoSheet(true));$('#clearAlgoSelection').addEventListener('click',()=>closeAlgoSheet(true));$('#algoSheetBackdrop').addEventListener('click',()=>closeAlgoSheet(true));$('#forecastMoreBtn').addEventListener('click',openForecastHistory);$('#forecastCountSelect').addEventListener('change',()=>{rollingForecastCacheKey='';renderForecastRounds()});const sheetDragTargets=[$('.sheet-grabber'),$('.sheet-head')].filter(Boolean);let sheetPointerStart=null;const activeSheet=()=>$('#algoSheet');sheetDragTargets.forEach(target=>{target.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;sheetPointerStart={y:e.clientY,t:Date.now()};target.setPointerCapture?.(e.pointerId)});target.addEventListener('pointerup',e=>{if(sheetPointerStart===null)return;const delta=e.clientY-sheetPointerStart.y;const elapsed=Math.max(1,Date.now()-sheetPointerStart.t);sheetPointerStart=null;const sheet=activeSheet();if(!sheet||sheet.hidden)return;const fast=Math.abs(delta)/elapsed>.45;if(delta<-26){if(fast||delta<-58)setSheetState('full');else if(sheet.classList.contains('sheet-peek'))setSheetState('half');else setSheetState('full')}else if(delta>24){if(sheet.classList.contains('sheet-full')||sheet.classList.contains('expanded'))setSheetState('half');else if(sheet.classList.contains('sheet-peek')){if(delta>85)closeAlgoSheet(true)}else setSheetState('peek') }});target.addEventListener('pointercancel',()=>{sheetPointerStart=null})});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#algoSheet').hidden)closeAlgoSheet(true)});$('#themeBtn').addEventListener('click',()=>setTheme(document.body.dataset.theme==='light'?'dark':'light'));$('#soundBtn').addEventListener('click',()=>{soundEnabled=!soundEnabled;$('#soundBtn').setAttribute('aria-pressed',String(soundEnabled));$('#soundBtn').textContent=soundEnabled?'🔔 提示音：开':'🔔 提示音：关';if(soundEnabled){playTripleChime();toast('已开启叮叮叮开奖提示音')}else toast('提示音已关闭')});$('#scratchBtn').addEventListener('click',()=>scratchEnabled?closeScratch():openScratch());const canvas=$('#scratchCanvas');canvas.addEventListener('pointerdown',e=>{if(!scratchEnabled)return;canvas.setPointerCapture?.(e.pointerId);scratchLastPoint=null;eraseScratch(e)});canvas.addEventListener('pointermove',e=>{if(!scratchEnabled||!e.buttons)return;eraseScratch(e)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>canvas.addEventListener(ev,()=>{scratchLastPoint=null}));window.addEventListener('resize',()=>{if(scratchEnabled)sizeScratchCanvas()});}
+function renderAnalytics(force=false){
+  const hist=currentRecords();
+  const signature=[windowN(),rangeBacktestPeriod,$('#forecastCountSelect')?.value||20,hist.map(r=>`${r.id}:${r.sum}:${r.digits.join('')}`).join(';')].join('|');
+  if(!force&&signature===analyticsRenderSignature)return;
+  analyticsRenderSignature=signature;
+  renderPrediction(hist);renderKillPrediction(hist);renderGoblinPrediction(hist);renderGoblinFourAndCompare(hist);renderOmissions(hist);renderRecent(hist);renderForecastRounds();
+}
+function renderTick(){renderCountdown()}
+async function boot(){const savedTheme=safeGet('ka28.lab.theme')||'light';setTheme(savedTheme);restoreCache();if(state.records.length){state.latest=state.records[state.records.length-1];renderDraw();renderAnalytics();setStatus('显示缓存数据 · 正在联网校准','warn')}const tasks=await Promise.allSettled([fetchLatest({silent:true}),fetchHistory({quiet:true})]);if(!state.latest&&state.records.length)state.latest=state.records[state.records.length-1];renderDraw();renderAnalytics();renderCountdown();setInterval(renderTick,1000);setInterval(()=>fetchLatest({silent:true}),3000);setInterval(()=>{if(!state.historyLoaded||state.records.length<30||state.historyError)fetchHistory({quiet:true})},30000);$('#refreshBtn').addEventListener('click',async()=>{const btn=$('#refreshBtn');btn.classList.add('is-syncing');try{await fetchLatest();await fetchHistory({quiet:true});renderAnalytics(true)}finally{setTimeout(()=>btn.classList.remove('is-syncing'),180)}});$('#windowSelect').addEventListener('change',()=>{killModelCacheKey='';renderAnalytics()});$('#algoLeaderboard').addEventListener('click',e=>{const row=e.target.closest('button[data-algo-id]');if(!row)return;const id=row.dataset.algoId;selectedAlgoIds.clear();selectedAlgoIds.add(id);document.querySelectorAll('#algoLeaderboard [data-algo-id]').forEach(item=>{const active=item.dataset.algoId===id;item.classList.toggle('is-active',active);item.setAttribute('aria-pressed',String(active))});renderAlgoSheet()});$('#algoSheetBody').addEventListener('change',e=>{if(e.target.id==='sheetRangeBacktest')applyRangeTuning(false)});$('#algoSheetBody').addEventListener('click',e=>{if(e.target.closest('#sheetAutoRangeBtn'))applyRangeTuning(true)});$('#closeAlgoSheet').addEventListener('click',()=>closeAlgoSheet(true));$('#clearAlgoSelection').addEventListener('click',()=>closeAlgoSheet(true));$('#algoSheetBackdrop').addEventListener('click',()=>closeAlgoSheet(true));$('#forecastMoreBtn').addEventListener('click',openForecastHistory);$('#forecastCountSelect').addEventListener('change',()=>{rollingForecastCacheKey='';renderForecastRounds()});const sheetDragTargets=[$('.sheet-grabber'),$('.sheet-head')].filter(Boolean);let sheetPointerStart=null;const activeSheet=()=>$('#algoSheet');sheetDragTargets.forEach(target=>{target.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;sheetPointerStart={y:e.clientY,t:Date.now()};target.setPointerCapture?.(e.pointerId)});target.addEventListener('pointerup',e=>{if(sheetPointerStart===null)return;const delta=e.clientY-sheetPointerStart.y;const elapsed=Math.max(1,Date.now()-sheetPointerStart.t);sheetPointerStart=null;const sheet=activeSheet();if(!sheet||sheet.hidden)return;const fast=Math.abs(delta)/elapsed>.45;if(delta<-26){if(fast||delta<-58)setSheetState('full');else if(sheet.classList.contains('sheet-peek'))setSheetState('half');else setSheetState('full')}else if(delta>24){if(sheet.classList.contains('sheet-full')||sheet.classList.contains('expanded'))setSheetState('half');else if(sheet.classList.contains('sheet-peek')){if(delta>85)closeAlgoSheet(true)}else setSheetState('peek') }});target.addEventListener('pointercancel',()=>{sheetPointerStart=null})});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#algoSheet').hidden)closeAlgoSheet(true)});$('#themeBtn').addEventListener('click',()=>setTheme(document.body.dataset.theme==='light'?'dark':'light'));$('#soundBtn').addEventListener('click',()=>{soundEnabled=!soundEnabled;$('#soundBtn').setAttribute('aria-pressed',String(soundEnabled));$('#soundBtn').textContent=soundEnabled?'🔔 提示音：开':'🔔 提示音：关';if(soundEnabled){playTripleChime();toast('已开启叮叮叮开奖提示音')}else toast('提示音已关闭')});$('#scratchBtn').addEventListener('click',()=>scratchEnabled?closeScratch():openScratch());const canvas=$('#scratchCanvas');canvas.addEventListener('pointerdown',e=>{if(!scratchEnabled)return;canvas.setPointerCapture?.(e.pointerId);scratchLastPoint=null;eraseScratch(e)});canvas.addEventListener('pointermove',e=>{if(!scratchEnabled||!e.buttons)return;eraseScratch(e)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>canvas.addEventListener(ev,()=>{scratchLastPoint=null}));window.addEventListener('resize',()=>{if(scratchEnabled)sizeScratchCanvas()});}
 window.__KA28_START_AFTER_AUTH=boot;
 })();
 </script>
