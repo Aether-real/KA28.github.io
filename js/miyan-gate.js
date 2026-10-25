@@ -21,7 +21,7 @@
   function post(url,body){return new Promise(function(resolve,reject){var x=new XMLHttpRequest(),done=false;function finish(ok,val){if(done)return;done=true;ok?resolve(val):reject(val)}x.open('POST',url,true);x.timeout=15000;x.setRequestHeader('Content-Type','application/x-www-form-urlencoded');x.onreadystatechange=function(){if(x.readyState===4){if(x.status<200||x.status>=300||!x.responseText)return finish(false,new Error('网络请求失败（HTTP '+x.status+'）'));try{finish(true,JSON.parse(x.responseText))}catch(e){finish(false,new Error('服务端返回内容不是有效 JSON'))}}};x.onerror=function(){finish(false,new Error('网络请求失败或跨域请求被拒绝'))};x.ontimeout=function(){finish(false,new Error('请求超时，请稍后重试'))};try{x.send(body)}catch(e){finish(false,e)}})}
   function formEncode(s){return encodeURIComponent(s).replace(/!/g,'%21').replace(/'/g,'%27').replace(/\(/g,'%28').replace(/\)/g,'%29').replace(/\*/g,'%2A').replace(/~/g,'%7E')}
   function request(action,bizAction,extra){var key=randomBytes(32),iv=randomBytes(16),nonceValue=nonce(20),biz=Object.assign({api_key:CFG.apiKey,action:bizAction,machine_id:deviceId(),timestamp:Math.floor(Date.now()/1000),nonce:nonceValue},extra||{});var ek=rsaEncrypt(key),ed=enc(JSON.stringify(biz),key,iv),body='action='+formEncode(action)+'&key_id='+formEncode(CFG.keyId)+'&encrypted_key='+formEncode(ek)+'&encrypted_data='+formEncode(ed)+'&iv='+formEncode(b64(iv));return post(CFG.authUrl,body).then(function(r){var responseIv=verifyEnvelope(r,bizAction,nonceValue);var data=JSON.parse(dec(r.data,key,responseIv));return {outer:r,data:data,nonce:nonceValue}})}
-  var noticeOverlay=$('miYanNoticeOverlay'),noticeTitle=$('miYanNoticeTitle'),noticeContent=$('miYanNoticeContent'),noticeClose=$('miYanNoticeClose'),updateBtn=$('miYanUpdateBtn'),announcementBtn=$('announcementBtn');
+  var noticeOverlay=$('miYanNoticeOverlay'),noticeTitle=$('miYanNoticeTitle'),noticeContent=$('miYanNoticeContent'),noticeClose=$('miYanNoticeClose'),updateBtn=$('miYanUpdateBtn'),announcementBtn=$('announcementBtn'),gateAnnouncementBtn=$('gateAnnouncementBtn'),gateAnnouncementTitle=$('gateAnnouncementTitle'),gateAnnouncementSummary=$('gateAnnouncementSummary');
   var updateState={loaded:false,checking:false,data:null,force:false,url:''};
   function multiline(v){if(v===null||v===undefined||v==='null')return '';return String(v).replace(/<br\s*\/?\s*>/gi,'\n').replace(/\\r\\n|\\n|\\r/g,'\n').replace(/\r\n?/g,'\n').trim()}
   function safeUnlockOverflow(){document.body.style.overflow=(gate&&!gate.hidden)?'hidden':''}
@@ -33,15 +33,25 @@
     noticeClose.hidden=false;noticeClose.textContent='知道了';updateBtn.hidden=true;
     noticeOverlay.hidden=false;document.body.style.overflow='hidden';
   }
+  function setGateAnnouncement(title,summary,state){
+    if(gateAnnouncementTitle)gateAnnouncementTitle.textContent=title||'网站公告与更新';
+    if(gateAnnouncementSummary)gateAnnouncementSummary.textContent=summary||'点击查看服务端公告与版本信息。';
+    if(gateAnnouncementBtn){gateAnnouncementBtn.dataset.state=state||'idle';gateAnnouncementBtn.setAttribute('aria-label',(title||'网站公告与更新')+'：点击查看详情');}
+  }
   function showUpdateMessage(d,manual){
     updateState.data=d;updateState.force=d.need_update===true&&d.force_update===1;updateState.url=typeof d.update_url==='string'?d.update_url.trim():'';
     var notice=multiline(d.notice),log=multiline(d.update_log),need=d.need_update===true,ver=String(d.latest_version||'').trim();
+    if(notice){setGateAnnouncement('网站公告',notice.replace(/\s+/g,' ').slice(0,115)+(notice.length>115?'…':''),'notice')}
+    else if(need){setGateAnnouncement(updateState.force?'需要更新':'发现新版本',((ver?'最新版本 v'+ver+'。':'')+(log||'点击查看更新说明。')).replace(/\s+/g,' ').slice(0,115),'update')}
+    else{setGateAnnouncement('暂无公告或更新','暂未收到新的服务端公告；点击此处可重新检查。','idle')}
     if(!notice&&!need){if(manual)showNoticeDiagnostic('公告与更新','目前没有新公告或可用更新。');return}
     noticeTitle.textContent=notice?'网站公告':(updateState.force?'需要更新':'发现新版本'+(ver?' v'+ver:''));
     var pieces=[];if(notice)pieces.push(notice);if(need){if(notice)pieces.push('');pieces.push((updateState.force?'当前版本需要更新':'检测到可用更新')+(ver?'（最新版本：v'+ver+'）':'')+'。');if(log)pieces.push(log);if(updateState.force&&!updateState.url)pieces.push('服务端尚未配置更新链接，请联系管理员。')}
     noticeContent.textContent=pieces.join('\n');
     noticeClose.hidden=!!updateState.force;noticeClose.textContent=need&&!updateState.force?'暂不更新':'知道了';
     updateBtn.hidden=!need;updateBtn.textContent=(updateState.force&&!updateState.url)?'重新检查更新':'前往更新';
+    /* Normal announcements live in the dedicated login tile on first entry. Forced updates remain blocking. */
+    if(!manual&&!updateState.force)return;
     noticeOverlay.hidden=false;document.body.style.overflow='hidden';
   }
   function checkUpdate(manual){
@@ -59,13 +69,13 @@
       if(typeof d.request_nonce!=='string'||d.request_nonce!==nonceValue||d.request_action!=='update'||typeof d.server_timestamp!=='number'||!Number.isFinite(d.server_timestamp)||Math.abs(d.server_timestamp-Date.now()/1000)>300)throw new Error('更新响应关联校验失败');
       if(d.status!==true||d.code!==1||typeof d.need_update!=='boolean'||(d.force_update!==0&&d.force_update!==1))throw new Error('更新响应数据不符合协议');
       updateState.loaded=true;showUpdateMessage(d,manual);return true;
-    }).catch(function(e){if(manual)showNoticeDiagnostic('公告检查失败',(e.message||'请求失败')+'。请检查网络、跨域设置或米验服务端配置。');else console.warn('[米验公告] 公告检查失败，授权流程不受影响。',e);return false}).finally(function(){updateState.checking=false});
+    }).catch(function(e){if(manual){setGateAnnouncement('公告检查失败',(e.message||'请求失败')+'。可检查网络后重试。','error');showNoticeDiagnostic('公告检查失败',(e.message||'请求失败')+'。请检查网络、跨域设置或米验服务端配置。')}else console.warn('[米验公告] 公告检查失败，授权流程不受影响。',e);return false}).finally(function(){updateState.checking=false});
   }  function startApp(){if(window.__KA28_START_AFTER_AUTH&&!window.__KA28_STARTED){window.__KA28_STARTED=true;window.__KA28_START_AFTER_AUTH()}}
   function unlock(data,cardKey){var receipt=data.auth_receipt;if(!receipt){say('验证响应缺少授权凭据，请联系服务端管理员。','err');return}localStorage.setItem('miyan_auth_receipt',receipt);localStorage.setItem('miyan_auth_expiry',String(data.expires_at||'永久'));if(cardKey)localStorage.setItem('miyan_card_key',cardKey);say('验证成功，正在进入预测实验室。','ok');gate.hidden=true;document.body.style.overflow='';startApp()}
   function recheck(){var receipt=localStorage.getItem('miyan_auth_receipt');if(!receipt)return Promise.resolve(false);return request('recheck','recheck',{auth_receipt:receipt}).then(function(r){if(r.data.rechecked===true){gate.hidden=true;document.body.style.overflow='';say('授权复核成功。','ok');startApp();return true}throw new Error('授权已失效，请重新验证')}).catch(function(e){localStorage.removeItem('miyan_auth_receipt');localStorage.removeItem('miyan_auth_expiry');say(e.message||'请重新输入卡密');return false})}
   function auth(){var card=(input.value||'').trim();if(!card){say('请先输入授权卡密。','err');input.focus();return}if(typeof JSEncrypt==='undefined'||typeof CryptoJS==='undefined'){say('加密组件加载失败，请检查网络后刷新。','err');return}busy(true,'验证中…');say('正在建立加密连接并验证卡密…');request('auth','auth',{card_key:card}).then(function(r){var d=r.data,authorized=d.authorized===true||d.authorized==='true';if(!authorized)throw new Error(d.message||'卡密验证未通过');return request('recheck','recheck',{auth_receipt:d.auth_receipt}).then(function(rr){if(rr.data.rechecked!==true)throw new Error('服务端复核失败');unlock(d,card)})}).catch(function(e){say(e.message||'验证失败，请稍后重试。','err')}).finally(function(){busy(false)})}
   function unbind(){var card=(input.value||localStorage.getItem('miyan_card_key')||'').trim();if(!card){say('请先输入需要解绑的卡密。','err');input.focus();return}busy(true,'解绑中…');say('正在请求服务端解绑…');request('unbind','unbind',{card_key:card}).then(function(r){var d=r.data;if(d.status===true||d.status==='true'){localStorage.removeItem('miyan_auth_receipt');localStorage.removeItem('miyan_auth_expiry');localStorage.removeItem('miyan_card_key');say((d.message||'设备解绑成功')+(d.unbind_count!==undefined?'\n已解绑次数：'+d.unbind_count:''),'ok')}else throw new Error(d.message||'解绑失败')}).catch(function(e){say(e.message||'解绑失败，请稍后重试。','err')}).finally(function(){busy(false)})}
-  verifyBtn.addEventListener('click',auth);unbindBtn.addEventListener('click',unbind);input.addEventListener('keydown',function(e){if(e.key==='Enter')auth()});noticeClose.addEventListener('click',hideNotice);updateBtn.addEventListener('click',openUpdateUrl);if(announcementBtn)announcementBtn.addEventListener('click',function(){checkUpdate(true)});noticeOverlay.addEventListener('click',function(e){if(e.target===noticeOverlay&&!updateState.force)hideNotice()});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!noticeOverlay.hidden&&!updateState.force)hideNotice()});document.body.style.overflow='hidden';
+  verifyBtn.addEventListener('click',auth);unbindBtn.addEventListener('click',unbind);input.addEventListener('keydown',function(e){if(e.key==='Enter')auth()});noticeClose.addEventListener('click',hideNotice);updateBtn.addEventListener('click',openUpdateUrl);if(announcementBtn)announcementBtn.addEventListener('click',function(){checkUpdate(true)});if(gateAnnouncementBtn)gateAnnouncementBtn.addEventListener('click',function(){setGateAnnouncement('正在检查公告','正在向服务端请求最新公告与版本信息…','loading');checkUpdate(true)});noticeOverlay.addEventListener('click',function(e){if(e.target===noticeOverlay&&!updateState.force)hideNotice()});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!noticeOverlay.hidden&&!updateState.force)hideNotice()});document.body.style.overflow='hidden';
   if(typeof JSEncrypt==='undefined'||typeof CryptoJS==='undefined'){say('加密组件加载失败。已尝试多个 CDN 源，请检查网络连接后刷新。','err')}else{say('正在复核本设备的授权状态…');checkUpdate(false);recheck().then(function(ok){if(!ok){var saved=localStorage.getItem('miyan_card_key');if(saved)input.value=saved;gate.hidden=false;document.body.style.overflow='hidden';say('请输入卡密完成验证。')}})}
 })();
 

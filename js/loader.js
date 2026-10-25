@@ -1,7 +1,7 @@
 /* Load crypto dependencies with CDN failover; then load local app code in strict order. */
 (function () {
   'use strict';
-  var VERSION = '20261022-2';
+  var VERSION = '20261025-toolbar-fill-polish6';
   var notice = document.getElementById('ka28BootNotice');
   function hideNotice() { if (notice) notice.classList.add('is-hidden'); }
   function loadScript(url, timeoutMs) {

@@ -1,10 +1,9 @@
 (()=>{'use strict';
 const API='https://pc28.world/api/v1';
 const $=s=>document.querySelector(s);
-// Move the existing 星轨算法 panel directly below the standard four-code reference;
-// its four-code output remains a subsection of that same panel, not a separate module.
-(()=>{const panel=$('#goblinPanel'),reference=$('.sum-forecast-block');if(panel&&reference&&panel.parentElement!==reference.parentElement)reference.after(panel);else if(panel&&reference&&reference.nextElementSibling!==panel)reference.after(panel);})();
-const state={records:[],latest:null,updatedAt:null,nextDrawAt:null,countdownSeconds:null,window:50,loading:false,historyLoaded:false,historyError:'',lastKenoAttempt:{},lastKenoNotice:0};
+// Keep the live 星轨算法 module in 下一期预测; compact 和值 candidates now sit below 二门 within the left prediction stack.
+(()=>{const panel=$('#goblinPanel'),prediction=$('#predictionSection');if(panel&&prediction&&panel.parentElement!==prediction)prediction.append(panel);})();
+const state={records:[],latest:null,updatedAt:null,nextDrawAt:null,countdownSeconds:null,window:50,loading:false,historyLoading:false,historyLoaded:false,historyError:'',lastKenoAttempt:{},lastKenoNotice:0};
 const STORAGE={records:'ka28.lab.records.v2',keno:'ka28.lab.keno.v2'};
 const theoretical=Array(28).fill(0);for(let a=0;a<10;a++)for(let b=0;b<10;b++)for(let c=0;c<10;c++)theoretical[a+b+c]++;
 const theoryP=theoretical.map(n=>n/1000);
@@ -465,7 +464,20 @@ function mergeDraws(draws){
   if(storageDirty)safeSet(STORAGE.records,JSON.stringify(state.records.map(r=>({...r,source:'cache'}))));
 }
 function restoreCache(){try{const raw=JSON.parse(safeGet(STORAGE.records)||'[]');if(Array.isArray(raw))mergeDraws(raw.slice(-500))}catch(_){}}
-function setStatus(text,type='ok'){const dot=$('#statusDot');$('#statusText').textContent=text;dot.className='dot'+(type==='warn'?' warn':type==='err'?' err':'')}
+function setStatus(text,type='ok'){
+  const detail=String(text??'');
+  const dot=$('#statusDot'),label=$('#statusText'),status=label?.closest('.status');
+  let compact=detail;
+  if(/API\s*已同步/.test(detail))compact='已同步';
+  else if(/暂不可用|同步失败|载入失败|请求失败|发生错误/.test(detail))compact='离线';
+  else if(/正在连接|连接中|同步中/.test(detail))compact='连接中';
+  else if(/正在联网校准|校准/.test(detail))compact='校准中';
+  else if(/显示缓存|缓存数据/.test(detail))compact='缓存';
+  else if(detail.length>7)compact=detail.slice(0,6)+'…';
+  if(label){label.textContent=compact;label.title=detail;label.setAttribute('aria-label',detail)}
+  if(status){status.title=detail;status.setAttribute('aria-label','API 状态：'+detail)}
+  if(dot)dot.className='dot'+(type==='warn'?' warn':type==='err'?' err':'');
+}
 let toastTimer=0;function toast(msg){const e=$('#toast');e.textContent=String(msg);e.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove('show'),3100)}
 async function getJSON(path,timeout=9000){const ctrl=new AbortController();const tid=setTimeout(()=>ctrl.abort(),timeout);try{const res=await fetch(API+path,{signal:ctrl.signal,headers:{Accept:'application/json'},cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);const j=await res.json();if(j?.ok===false)throw new Error(j.error?.message||'API 返回错误');return j}finally{clearTimeout(tid)}}
 function getDrawFromLatest(j){return j?.data?.draw??j?.data?.item??null}
@@ -492,6 +504,8 @@ async function fetchLatest({silent=false}={}){
 async function maybeFetchKeno(draw){const id=String(draw.id),now=Date.now();if((state.lastKenoAttempt[id]||0)>now-15000)return;state.lastKenoAttempt[id]=now;const cached=readKenoCache()[id];if(cached){draw.keno=validKeno(cached);if(draw.keno.length===20)return}try{const j=await getJSON('/draws/'+encodeURIComponent(id),6000);const raw=j?.data?.draw??j?.data?.item??j?.data;const k=validKeno(raw?.keno??raw?.keno20??raw?.keno_numbers??raw?.kenoNumbers);if(String(raw?.nbr??raw?.id??id)===id&&k.length===20){draw.keno=k;cacheKeno(id,k);return}}catch(_){} }
 function recordsRenderSignature(){return state.records.map(recordStorageSignature).join('\n')}
 async function fetchHistory({quiet=true}={}){
+  if(state.historyLoading)return false;
+  state.historyLoading=true;
   try{
     const beforeRecords=recordsRenderSignature();
     const beforeLatest=drawDataSignature(latestDraw());
@@ -511,6 +525,8 @@ async function fetchHistory({quiet=true}={}){
     state.historyError=e.message||'history API 请求失败';state.historyLoaded=true;
     if(!quiet)toast('历史载入失败：'+state.historyError);
     analyticsRenderSignature='';renderAnalytics(true);return false;
+  }finally{
+    state.historyLoading=false;
   }
 }
 function latestDraw(){return state.latest||state.records[state.records.length-1]||null}
@@ -722,7 +738,7 @@ function threeDoorModel(hist){const key=[hist.length,hist[0]?.id,hist.at(-1)?.id
 function renderAlgoLeaderboard(hist,models){
   const root=$('#algoLeaderboard');if(!root)return;
   const windowTag=$('#algoRankWindow');if(windowTag)windowTag.textContent=`最近 ${hist.length||windowN()} 期窗口`;
-  if(!hist.length||!models){currentAlgoRankings=[];root.innerHTML='<div class="tag">历史样本不足，暂时无法排行</div>';selectedAlgoIds.clear();if(sheetMode!=='round')renderAlgoSheet();return}
+  if(!hist.length||!models){currentAlgoRankings=[];root.innerHTML='<div class="tag">历史样本不足，暂时无法排行</div>';selectedAlgoIds.clear();if(sheetMode==='algo')closeAlgoSheet(false);return}
   const adapted=legacyHistory(hist);
   const items=sourceAlgoPack.ALGOS.map(algo=>{
     const st=models.stats?.[algo.id]||{hit:0,tested:0,rate:0,weight:0};
@@ -735,23 +751,28 @@ function renderAlgoLeaderboard(hist,models){
   }).filter(Boolean).sort((a,b)=>b.rate-a.rate||b.tested-a.tested||b.weight-a.weight||a.id.localeCompare(b.id)).slice(0,3);
   currentAlgoRankings=items;
   for(const id of [...selectedAlgoIds])if(!items.some(x=>x.id===id))selectedAlgoIds.delete(id);
-  root.innerHTML=items.length?items.map((x,i)=>`<button type="button" class="algo-leader-row${selectedAlgoIds.has(x.id)?' is-active':''}" data-algo-id="${esc(x.id)}" aria-pressed="${selectedAlgoIds.has(x.id)?'true':'false'}" aria-label="打开${esc(x.name)}算法详情"><span class="algo-leader-rank r${i+1}">#${i+1}</span><span class="algo-leader-name"><b>${esc(x.name)}</b><small>${esc(x.source)} · ${x.hit}/${x.tested} 次避开杀组</small></span><span class="algo-leader-rate"><strong>${(x.rate*100).toFixed(1)}%</strong><small>${x.tested<15?'样本偏少':'历史命中率'}</small></span></button>`).join(''):'<div class="tag">当前窗口没有可输出有效杀组的算法</div>';
+  root.innerHTML=items.length?items.map((x,i)=>{const ratePct=Math.max(0,Math.min(100,Number(x.rate)*100||0));return `<button type="button" class="algo-leader-row${selectedAlgoIds.has(x.id)?' is-active':''}" data-algo-id="${esc(x.id)}" aria-pressed="${selectedAlgoIds.has(x.id)?'true':'false'}" aria-label="打开${esc(x.name)}算法详情"><span class="algo-leader-rank r${i+1}">#${i+1}</span><span class="algo-leader-name"><b>${esc(x.name)}</b><small class="algo-leader-source">${esc(x.source||'内置算法')}</small><span class="algo-leader-sample">${x.hit}/${x.tested} 次避开杀组</span></span><span class="algo-leader-rate"><strong>${ratePct.toFixed(1)}%</strong><small>${x.tested<15?'样本偏少':'历史命中率'}</small><span class="algo-leader-meter" aria-hidden="true"><i style="width:${ratePct.toFixed(1)}%"></i></span></span></button>`}).join(''):'<div class="tag">当前窗口没有可输出有效杀组的算法</div>';
   const note=$('#algoRankNote');if(note)note.textContent=`按当前窗口的逐期历史排序，共 ${items.length} 个可用算法；命中指实际组合不同于预测杀组。样本少的算法可能因随机波动排名靠前，不代表下一期胜率。点击任意算法条目打开底部面板；上滑可全屏，下滑可折叠。`;
-  if(selectedAlgoIds.size)renderAlgoSheet();else if(sheetMode!=='round'&&sheetMode!=='forecasts')closeAlgoSheet(false);
+  if(sheetMode==='algo'){if(selectedAlgoIds.size)renderAlgoSheet();else closeAlgoSheet(false)}
 }
 function setSheetState(state){
   const sheet=$('#algoSheet');if(!sheet)return;
-  sheet.classList.remove('sheet-peek','sheet-full','expanded');
-  if(state==='peek')sheet.classList.add('sheet-peek');
-  else if(state==='full'){sheet.classList.add('sheet-full','expanded');}
-  sheet.dataset.sheetState=state;
+  const next=['peek','half','full'].includes(state)?state:'half';
+  sheet.classList.remove('is-dragging','sheet-peek','sheet-half','sheet-full','expanded');
+  sheet.style.removeProperty('height');
+  sheet.style.removeProperty('transform');
+  if(next==='peek')sheet.classList.add('sheet-peek');
+  else if(next==='full')sheet.classList.add('sheet-full','expanded');
+  else sheet.classList.add('sheet-half');
+  sheet.dataset.sheetState=next;
 }
 function renderAlgoSheet(){
   sheetMode='algo';
   const sheet=$('#algoSheet'),backdrop=$('#algoSheetBackdrop'),body=$('#algoSheetBody');if(!sheet||!backdrop||!body)return;
+  sheet.dataset.sheetMode='algo';
   const chosen=currentAlgoRankings.filter(x=>selectedAlgoIds.has(x.id));
   const count=$('#sheetSelectionCount');if(count)count.textContent=`当前算法：${chosen[0]?.name||'—'}`;
-  $('#algoSheetTitle').textContent='算法预测内容';$('#algoSheetSubtitle').textContent='当前期输出与历史命中统计';$('#clearAlgoSelection').textContent='关闭面板';
+  const kicker=$('#algoSheetKicker');if(kicker)kicker.textContent='ALGORITHM DETAILS';$('#algoSheetTitle').textContent='算法预测内容';$('#algoSheetSubtitle').textContent='当前期输出与历史命中统计';$('#clearAlgoSelection').textContent='关闭面板';
   if(!chosen.length){sheet.classList.remove('open');backdrop.classList.remove('open');document.body.classList.remove('algo-sheet-open');clearTimeout(sheetCloseTimer);sheetCloseTimer=setTimeout(()=>{if(!selectedAlgoIds.size){sheet.hidden=true;backdrop.hidden=true}},240);return}
   const newlyOpened=sheet.hidden;
   clearTimeout(sheetCloseTimer);sheet.hidden=false;backdrop.hidden=false;document.body.classList.add('algo-sheet-open');
@@ -769,8 +790,8 @@ function applyRangeTuning(force=true){
   const hist=currentRecords();rangeKillModel(hist,true);renderAnalytics();if(sheetMode==='algo'&&selectedAlgoIds.size)renderAlgoSheet();toast(`区间已自动调节 · 回测近 ${rangeBacktestPeriod} 期`);
 }
 function closeAlgoSheet(clear=true){
-  if(clear){selectedAlgoIds.clear();document.querySelectorAll('#algoLeaderboard [data-algo-id]').forEach(x=>{x.classList.remove('is-active');x.setAttribute('aria-pressed','false')});sheetMode='algo';}
-  const sheet=$('#algoSheet'),backdrop=$('#algoSheetBackdrop');if(sheet)sheet.classList.remove('open');if(backdrop)backdrop.classList.remove('open');document.body.classList.remove('algo-sheet-open');
+  if(clear){selectedAlgoIds.clear();document.querySelectorAll('#algoLeaderboard [data-algo-id]').forEach(x=>{x.classList.remove('is-active');x.setAttribute('aria-pressed','false')});sheetMode='algo';const sheetEl=$('#algoSheet');if(sheetEl)sheetEl.dataset.sheetMode='algo';}
+  const sheet=$('#algoSheet'),backdrop=$('#algoSheetBackdrop');if(sheet){sheet.classList.remove('open','is-dragging');sheet.style.removeProperty('height');sheet.style.removeProperty('transform')}if(backdrop)backdrop.classList.remove('open');document.body.classList.remove('algo-sheet-open');
   clearTimeout(sheetCloseTimer);sheetCloseTimer=setTimeout(()=>{if(!selectedAlgoIds.size){if(sheet)sheet.hidden=true;if(backdrop)backdrop.hidden=true}},240);
   const count=$('#sheetSelectionCount');if(count)count.textContent=selectedAlgoIds.size?`当前算法：${[...selectedAlgoIds][0]}`:'当前未打开算法';
 }
@@ -850,7 +871,7 @@ function renderKillPrediction(hist){
   const modelWindow=hist.slice(-windowN());
   if(!modelWindow.length){
     $('#killGroupResult').textContent='—';$('#ownKillResult').textContent='—';$('#ownKillInfo').textContent='等待真实历史样本';$('#algoVotesTag').textContent='等待数据';
-    $('#comboTwo').innerHTML='<span class="tag">等待历史数据</span>';$('#comboThree').innerHTML='<span class="tag">等待历史数据</span>';$('#threeDoorGroups').innerHTML='<span class="tag">等待历史数据</span>';$('#killVoteBars').innerHTML='';renderAlgoLeaderboard([],null);return;
+    $('#comboTwo').innerHTML='<span class="tag">等待历史数据</span>';$('#comboThree').innerHTML='<span class="tag">等待历史数据</span>';$('#threeDoorGroups').innerHTML='<span class="tag">等待历史数据</span>';$('#killVoteBars').innerHTML='<div class="vote-empty">等待有效历史样本</div>';renderAlgoLeaderboard([],null);return;
   }
   const models=sourceVoteModel(modelWindow);
   const triple=modelWindow.length>=2?threeDoorModel(modelWindow):{groups:[],range:null,rate:null,tested:0};
@@ -904,13 +925,45 @@ function eraseScratch(e){
     if(total&&clear/total>.43){closeScratch();toast('已刮开，开奖号码已显示')}
   }
 }
-function setTheme(mode){const next=mode==='light'?'light':'dark';document.documentElement.dataset.theme=next;document.documentElement.style.colorScheme=next;document.body.dataset.theme=next;safeSet('ka28.lab.theme',next);const btn=$('#themeBtn');if(btn){btn.textContent=next==='light'?'🌙':'☀️';btn.title=next==='light'?'切换到暗色主题':'切换到亮色主题';btn.setAttribute('aria-label',btn.title)}const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=next==='light'?'#edf4fb':'#09121e'}
+let themeTransitionBusy=false;
+function setTheme(mode){const next=mode==='light'?'light':'dark';const root=document.documentElement;const body=document.body;root.dataset.theme=next;body.dataset.theme=next;root.style.colorScheme=next;body.style.colorScheme=next;safeSet('ka28.lab.theme',next);const btn=$('#themeBtn');if(btn){btn.innerHTML=next==='light'?'<svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M20.5 15.1A8.6 8.6 0 0 1 8.9 3.5 8.8 8.8 0 1 0 20.5 15.1Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>':'<svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';btn.title=next==='light'?'切换到暗色主题':'切换到亮色主题';btn.setAttribute('aria-label',btn.title);btn.setAttribute('aria-pressed',String(next==='dark'))}const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=next==='light'?'#f3f4ec':'#101412'}
+function toggleThemeFromButton(){if(themeTransitionBusy)return;const btn=$('#themeBtn');const next=document.body.dataset.theme==='light'?'dark':'light';if(!btn){setTheme(next);return}const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;if(reduced||typeof document.startViewTransition!=='function'){setTheme(next);return}const rect=btn.getBoundingClientRect();const x=rect.left+rect.width/2;const y=rect.top+rect.height/2;const farX=Math.max(x,window.innerWidth-x);const farY=Math.max(y,window.innerHeight-y);const radius=Math.ceil(Math.hypot(farX,farY)+24);const root=document.documentElement;root.style.setProperty('--theme-origin-x',`${x}px`);root.style.setProperty('--theme-origin-y',`${y}px`);root.style.setProperty('--theme-reveal-radius',`${radius}px`);let transition;themeTransitionBusy=true;btn.disabled=true;const cleanup=()=>{root.style.removeProperty('--theme-origin-x');root.style.removeProperty('--theme-origin-y');root.style.removeProperty('--theme-reveal-radius');themeTransitionBusy=false;btn.disabled=false};try{transition=document.startViewTransition(()=>setTheme(next));transition.finished.catch(()=>{}).finally(cleanup)}catch(_){setTheme(next);cleanup()}}
 
 function omissionOf(hist,fn){for(let i=hist.length-1,gap=0;i>=0;i--,gap++)if(fn(hist[i]))return gap;return hist.length}
 function esc(s){return String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 function omissionTile(label,gap){return `<div class="${gap>=12?'omit-tile hot':'omit-tile'}"><b>${esc(label)}</b><small>遗漏 ${gap} 期</small></div>`}
 function renderOmissions(hist){$('#omissionSample').textContent=hist.length+' 期样本';$('#sumOmissions').innerHTML=Array.from({length:28},(_,n)=>({n,gap:omissionOf(hist,r=>r.sum===n)})).map(x=>omissionTile(x.n,x.gap)).join('');const simple=[['小',r=>r.sum<=13],['大',r=>r.sum>=14],['单',r=>r.sum%2===1],['双',r=>r.sum%2===0],['小单',r=>r.combo==='小单'],['小双',r=>r.combo==='小双'],['大单',r=>r.combo==='大单'],['大双',r=>r.combo==='大双']];$('#comboOmissions').innerHTML=simple.map(([name,fn])=>`<div class="cat-omit"><span>${name}</span><b>遗漏 ${omissionOf(hist,fn)} 期</b></div>`).join('');const traits=[['龙',r=>r.dragon==='龙'],['虎',r=>r.dragon==='虎'],['和',r=>r.dragon==='和'],['小边',r=>r.edge==='小边'],['中边',r=>r.edge==='中边'],['大边',r=>r.edge==='大边'],['极小',r=>r.sum<=5],['极大',r=>r.sum>=22],['对子',r=>r.shape==='对子'],['顺子',r=>r.shape==='顺子'],['杂六',r=>r.shape==='杂六'],['豹子',r=>r.shape==='豹子']];$('#traitOmissions').innerHTML=traits.map(([name,fn])=>`<div class="cat-omit"><span>${name}</span><b>遗漏 ${omissionOf(hist,fn)} 期</b></div>`).join('')}
-function renderRecent(hist){$('#recentRows').innerHTML=hist.slice(-8).reverse().map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(normalizeTime(r.time))}</td><td class="num">${r.digits.join(' + ')}</td><td>${r.sum}</td><td>${esc(r.combo)}</td><td>${esc(r.edge)}</td><td>${esc(r.shape)}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:18px">API 尚未返回历史开奖</td></tr>'}
+function renderRecent(hist){
+  const requested=Math.max(1,Math.min(200,Number($('#drawHistoryCountSelect')?.value)||20));
+  const newest=hist.slice(-requested).reverse();
+  $('#recentRows').innerHTML=newest.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(normalizeTime(r.time))}</td><td class="num">${r.digits.map(esc).join(' + ')}</td><td>${esc(r.sum)}</td><td>${esc(r.combo)}</td><td>${esc(r.edge)}</td><td>${esc(r.shape)}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:18px">API 尚未返回历史开奖</td></tr>';
+  const count=$('#drawHistoryCount');if(count)count.textContent=`最近 ${newest.length}/${requested} 期`;
+  const table=$('#drawHistorySection .table-wrap');if(table)table.setAttribute('aria-label',`最近 ${newest.length} 期真实开奖记录`);
+  const sheet=$('#algoSheet');if(sheetMode==='records'&&sheet&&!sheet.hidden)renderRecentSheet(false);
+}
+function recentRecordMarkup(r){
+  const digits=(r.digits||[]).map(n=>`<span class="recent-sheet-digit">${esc(n)}</span>`).join('<span class="recent-sheet-op" aria-hidden="true">+</span>');
+  return `<article class="recent-sheet-record"><div class="recent-sheet-record-head"><div class="recent-sheet-period"><strong>第 ${esc(r.id)} 期</strong><time>${esc(normalizeTime(r.time))}</time></div><span class="recent-sheet-sum"><small>和值</small><b>${esc(r.sum)}</b></span></div><div class="recent-sheet-result">${digits}<span class="recent-sheet-equals">=</span><strong>${esc(r.sum)}</strong></div><div class="recent-sheet-tags"><span>${esc(r.combo)}</span><span>${esc(r.edge)}</span><span>${esc(r.shape)}</span></div></article>`;
+}
+function renderRecentSheet(openPanel=false){
+  const sheet=$('#algoSheet'),backdrop=$('#algoSheetBackdrop'),body=$('#algoSheetBody');if(!sheet||!backdrop||!body)return;
+  const rows=currentRecords().slice(-10).reverse();
+  body.innerHTML=rows.length?`<div class="recent-sheet-caption"><span>最近 ${rows.length} 期 · 真实开奖</span><span>数据来自开奖 API</span></div><div class="recent-sheet-list">${rows.map(recentRecordMarkup).join('')}</div>`:`<div class="recent-sheet-empty"><strong>暂无真实开奖记录</strong><span>等待开奖 API 返回有效历史数据。</span></div>`;
+  const kicker=$('#algoSheetKicker');if(kicker)kicker.textContent='REAL DRAW RECORDS';
+  $('#algoSheetTitle').textContent='真实开奖记录';
+  $('#algoSheetSubtitle').textContent='最近 10 期 · 按开奖期号从新到旧排列';
+  $('#sheetSelectionCount').textContent=`显示 ${rows.length}/10 期真实开奖`;
+  $('#clearAlgoSelection').textContent='关闭面板';
+  if(!openPanel)return;
+  sheetMode='records';sheet.dataset.sheetMode='records';selectedAlgoIds.clear();
+  document.querySelectorAll('#algoLeaderboard [data-algo-id]').forEach(x=>{x.classList.remove('is-active');x.setAttribute('aria-pressed','false')});
+  clearTimeout(sheetCloseTimer);sheet.classList.remove('is-dragging');sheet.style.removeProperty('height');sheet.style.removeProperty('transform');
+  const wasHidden=sheet.hidden;sheet.hidden=false;backdrop.hidden=false;document.body.classList.add('algo-sheet-open');
+  setSheetState('half');
+  requestAnimationFrame(()=>{sheet.classList.add('open');backdrop.classList.add('open')});
+  if(wasHidden){const grabber=$('.sheet-grabber');grabber?.setAttribute('aria-label','拖动调整真实开奖记录面板高度');}
+}
+
 let rollingForecastCacheKey='',rollingForecastCache=[];
 const MIN_FORECAST_HISTORY=40;
 function rollingForecasts(count){
@@ -961,6 +1014,33 @@ function hitBadge(hit,successLabel='中',missLabel='死'){
   return `<span class="forecast-hit ${hit?'good':'bad'}">${hit?'🀄 '+successLabel:'🍉 '+missLabel}</span>`;
 }
 function forecastCard(r,compact=false){
+  if(compact){
+    const status=(ok,yes='命中',no='未中')=>`<span class="latest-forecast-status ${ok?'is-good':'is-bad'}">${ok?yes:no}</span>`;
+    const sumValues=(r.sums||[]).map(n=>esc(n)).join(' · ')||'—';
+    const goblinSums=(r.goblinSums||[]).map(n=>esc(n)).join(' · ')||'—';
+    const comboThreeText=(r.comboThree||[]).map(esc).join(' / ')||'—';
+    const threeDoorText=(r.threeGroups||[]).map(esc).join(' / ')||'样本不足';
+    return `<article class="forecast-round-card latest-forecast-summary">
+      <div class="latest-forecast-top"><div class="forecast-period"><b>第 ${esc(r.id)} 期</b><small>${esc(normalizeTime(r.time))}</small></div><div class="latest-forecast-result"><span>真实开奖</span><b>${r.digits.map(n=>esc(n)).join(' + ')} = ${r.actualSum}</b><small>${esc(r.actualCombo)}</small></div></div>
+      <div class="latest-forecast-section-label">KA28 预测回测</div>
+      <div class="latest-forecast-metrics">
+        <div class="latest-forecast-metric"><span>KA28 杀组</span><b>${esc(r.kill)}</b>${status(r.killHit,'避开成功','杀组出现')}</div>
+        <div class="latest-forecast-metric"><span>KA28 二门</span><b>${r.comboTwo.map(esc).join(' / ')||'—'}</b>${status(r.comboHit)}</div>
+        <div class="latest-forecast-metric"><span>融合和值四码</span><b>${sumValues}</b>${status(r.sumHit)}</div>
+      </div>
+      <section class="latest-forecast-goblin" aria-label="哥布林星轨算法回测">
+        <div class="latest-forecast-goblin-head"><b>🐲 哥布林 · 星轨回测</b><span>四项指标</span></div>
+        <div class="latest-forecast-goblin-grid">
+          <div><span>星轨杀号组</span><b>${esc(r.goblin.kill)}</b>${status(r.goblinKillHit,'避开成功','杀组出现')}</div>
+          <div><span>星轨双组</span><b>${r.goblin.doubleGroups.map(esc).join(' / ')||'—'}</b>${status(r.goblinDoubleHit)}</div>
+          <div><span>星轨三门</span><b>${r.goblin.threeDoor.map(esc).join(' / ')||'—'}</b>${status(r.goblinThreeDoorHit,'覆盖','未覆盖')}</div>
+          <div><span>星轨和值四码</span><b>${goblinSums}</b>${status(!!r.goblinSumHit)}</div>
+        </div>
+        <small class="latest-forecast-detail-note">预测仅使用该期开奖前的历史数据；回测结果不代表下一期保证。</small>
+      </section>
+      <div class="forecast-reference-line"><b>组合参考</b><span class="forecast-reference-item">三组：${comboThreeText} ${status(r.comboThreeHit,'中','未中')}</span><span class="forecast-reference-item">三门：${threeDoorText} ${status(r.threeHit,'中','未中')}</span></div>
+    </article>`;
+  }
   const sumPills=r.sums.map(n=>`<span class="forecast-sum-pill">${n}</span>`).join('');
   return `<article class="forecast-round-card live-forecast-card ${compact?'is-compact':''}">
     <div class="forecast-row-head"><div class="forecast-period"><b>第 ${esc(r.id)} 期</b><small>${esc(normalizeTime(r.time))}</small></div><div class="forecast-actual"><span>真实开奖</span><b>${r.digits.map(n=>esc(n)).join(' + ')} = ${r.actualSum}</b><small>${esc(r.actualCombo)}</small></div></div>
@@ -975,44 +1055,57 @@ function forecastCard(r,compact=false){
         <div class="forecast-goblin-cell"><small>星轨杀号组</small><b class="goblin-kill-text">${esc(r.goblin.kill)}</b>${hitBadge(r.goblinKillHit,'杀中','未杀中')}</div>
         <div class="forecast-goblin-cell"><small>星轨双组</small><b>${r.goblin.doubleGroups.map(esc).join(' / ')}</b>${hitBadge(r.goblinDoubleHit,'命中','未中')}</div>
         <div class="forecast-goblin-cell"><small>星轨三门</small><b>${r.goblin.threeDoor.map(esc).join(' / ')}</b>${hitBadge(r.goblinThreeDoorHit,'覆盖','未覆盖')}</div>
+        <div class="forecast-goblin-cell"><small>星轨和值四码</small><div class="forecast-sum-values">${(r.goblinSums||[]).map(n=>`<span class="forecast-sum-pill">${n}</span>`).join('')}</div>${hitBadge(!!r.goblinSumHit,'四码命中','四码未中')}</div>
       </div>
       ${r.goblinSpecial?'<small class="forecast-goblin-note">本期真实和值为 13/14，按原版哥布林特殊保护规则计杀号/双组命中。</small>':''}
-      <div class="forecast-goblin-four-inline">
-        <div class="forecast-goblin-head"><b>🎯 星轨四码参考</b><span>和值候选 · 逐期回测</span></div>
-        <div class="forecast-sum-values">${(r.goblinSums||[]).map(n=>`<span class="forecast-sum-pill">${n}</span>`).join('')}</div>
-        ${hitBadge(!!r.goblinSumHit,'四码命中','四码未中')}
-        <small class="forecast-goblin-note">该期星轨四码只依据第 ${esc(r.goblin.inputIssue)} 期及之前可用历史生成；属于星轨分组映射后的扩展和值候选。</small>
-      </div>
+      <small class="forecast-goblin-note">星轨四码只依据第 ${esc(r.goblin.inputIssue)} 期及之前可用历史生成；属于星轨分组映射后的扩展和值候选。</small>
     </section>
-    ${compact?'':`<div class="forecast-more-detail"><div><span>KA28 三组组合参考</span><b>${r.comboThree.map(esc).join(' / ')}</b>${hitBadge(r.comboThreeHit,'覆盖','未覆盖')}</div><div><span>KA28 三门参考</span><b>${r.threeGroups.length?r.threeGroups.map(esc).join(' / '):'样本不足'}</b>${r.threeGroups.length?hitBadge(r.threeHit,'覆盖','未覆盖'):'<span class="forecast-hit neutral">样本不足</span>'}</div><small>本期开奖来自 API；KA28 与哥布林预测都只使用对应期开奖之前可用的数据。</small></div>`}
+    ${compact?'':`<div class="forecast-reference-line"><b>组合参考</b><span class="forecast-reference-item">三组：${r.comboThree.map(esc).join(' / ')||'—'} ${hitBadge(r.comboThreeHit,'中','未中')}</span><span class="forecast-reference-item">三门：${r.threeGroups.length?r.threeGroups.map(esc).join(' / '):'样本不足'} ${hitBadge(r.threeHit,'中','未中')}</span><small>开奖来自 API；预测只使用当期开奖之前可用的数据。</small></div>`}
   </article>`;
 }
-function forecastStats(rows){
-  const count=rows.length;
+function forecastStatsGrid(rows){
+  const sample=Array.isArray(rows)?rows:[];
+  const count=sample.length;
   const metrics=[['KA28 杀组',r=>r.killHit],['KA28 二门',r=>r.comboHit],['KA28 三组',r=>r.comboThreeHit],['KA28 融合四码',r=>r.sumHit],['星轨四码',r=>r.goblinSumHit],['哥布林杀组',r=>r.goblinKillHit],['星轨双组',r=>r.goblinDoubleHit],['星轨三门',r=>r.goblinThreeDoorHit]];
-  return `<div class="forecast-stats-grid">${metrics.map(([name,fn])=>{const hit=rows.filter(fn).length;return `<div class="forecast-stat"><span>${name}命中</span><b>${hit}/${count||0}</b><small>${count?(hit/count*100).toFixed(1)+'%':'—'}</small></div>`}).join('')}</div><p class="forecast-stats-caption">统计样本 ${count} 期 · 各项均与 API 实际开奖结果逐期比对；星轨算法每期仅读取前一期号码/和值并复用原版哥布林逻辑。原版规定实际和值 13/14 对杀号及双组计特殊命中；三门覆盖率仍按实际组合直接判断。</p>`;
+  return `<div class="forecast-stats-grid">${metrics.map(([name,fn])=>{const hit=sample.filter(fn).length;return `<div class="forecast-stat"><span>${name}命中</span><b>${hit}/${count||0}</b><small>${count?(hit/count*100).toFixed(1)+'%':'—'}</small></div>`}).join('')}</div>`;
+}
+function forecastStats(rows){
+  const count=Array.isArray(rows)?rows.length:0;
+  return `${forecastStatsGrid(rows)}<p class="forecast-stats-caption">统计样本 ${count} 期 · 每期只使用该期开奖前的历史数据，并与 API 实际结果核对。历史命中率仅描述所选样本，不代表下一期结果。</p>`;
 }
 function renderForecastSheet(rows){
   const body=$('#algoSheetBody');if(!body)return;
-  const newestFirst=rows.slice().reverse();
-  const empty=`<div class="round-sheet-card"><p class="sheet-note">历史样本不足，至少需要 ${MIN_FORECAST_HISTORY} 期历史数据才能建立可用的逐期回测记录。</p></div>`;
-  body.innerHTML=`${forecastStats(newestFirst)}${newestFirst.length?newestFirst.map(r=>forecastCard(r,false)).join(''):empty}`;
+  const newestFirst=(Array.isArray(rows)?rows:[]).slice().reverse();
+  const empty=`<div class="forecast-empty forecast-sheet-empty"><span>⌛</span><div><b>暂时没有可展示的逐期预测记录</b><small>至少需要 ${MIN_FORECAST_HISTORY} 期真实历史作为预测依据。样本不足时不会填充虚构命中率。</small></div></div>`;
+  const list=newestFirst.length?`<div class="forecast-sheet-list">${newestFirst.map(r=>forecastCard(r,false)).join('')}</div>`:empty;
+  body.innerHTML=`<div class="forecast-sheet-content">${forecastStats(newestFirst)}${list}</div>`;
+  const kicker=$('#algoSheetKicker');if(kicker)kicker.textContent='FORECAST HISTORY';
   $('#algoSheetTitle').textContent='真实开奖预测记录';
   $('#algoSheetSubtitle').textContent=`最近 ${Number($('#forecastCountSelect')?.value)||20} 期 · API 实际开奖逐期核对`;
-  $('#sheetSelectionCount').textContent=`统计 ${rows.length} 期真实开奖`;
+  $('#sheetSelectionCount').textContent=`统计 ${newestFirst.length} 期逐期回测`;
   $('#clearAlgoSelection').textContent='关闭面板';
+  $('.sheet-grabber')?.setAttribute('aria-label','拖动调整预测历史面板高度');
 }
 function openForecastHistory(){
-  const sheet=$('#algoSheet'),backdrop=$('#algoSheetBackdrop');if(!sheet||!backdrop)return;
-  selectedAlgoIds.clear();document.querySelectorAll('#algoLeaderboard [data-algo-id]').forEach(x=>{x.classList.remove('is-active');x.setAttribute('aria-pressed','false')});
-  sheetMode='forecasts';renderForecastSheet(rollingForecasts(Number($('#forecastCountSelect')?.value)||20));
-  clearTimeout(sheetCloseTimer);setSheetState('half');sheet.hidden=false;backdrop.hidden=false;document.body.classList.add('algo-sheet-open');
+  const sheet=$('#algoSheet'),backdrop=$('#algoSheetBackdrop'),body=$('#algoSheetBody');
+  if(!sheet||!backdrop||!body)return;
+  const rows=rollingForecasts(Number($('#forecastCountSelect')?.value)||20);
+  sheetMode='forecast';sheet.dataset.sheetMode='forecast';selectedAlgoIds.clear();
+  document.querySelectorAll('#algoLeaderboard [data-algo-id]').forEach(x=>{x.classList.remove('is-active');x.setAttribute('aria-pressed','false')});
+  clearTimeout(sheetCloseTimer);sheet.classList.remove('is-dragging');sheet.style.removeProperty('height');sheet.style.removeProperty('transform');
+  renderForecastSheet(rows);
+  const wasHidden=sheet.hidden;sheet.hidden=false;backdrop.hidden=false;document.body.classList.add('algo-sheet-open');
+  setSheetState('half');
   requestAnimationFrame(()=>{sheet.classList.add('open');backdrop.classList.add('open')});
+  const btn=$('#forecastMoreBtn');if(btn)btn.setAttribute('aria-haspopup','dialog');
 }
 function renderForecastRounds(){
   const root=$('#forecastLatest');if(!root)return;
   const count=Number($('#forecastCountSelect')?.value)||20;
   const rows=rollingForecasts(count),latest=rows.at(-1);
+  const overview=$('#forecastHitRateOverview');if(overview)overview.innerHTML=forecastStatsGrid(rows);
+  const overviewCaption=$('#forecastHitRateCaption');if(overviewCaption)overviewCaption.textContent=rows.length?`逐期回测 ${rows.length} 期 · 所有统计仅针对已开奖样本，不代表下一期结果。`:`当前有效回测样本不足；至少需要 ${MIN_FORECAST_HISTORY} 期先验开奖，不填充虚构命中率。`;
+  const overviewRange=$('#hitRateRangeTag');if(overviewRange)overviewRange.textContent=`目标近 ${count} 期 · 有效 ${rows.length} 期`;
   const note=$('#forecastStatsNote');
   if(!latest){
     root.innerHTML=`<div class="forecast-empty"><span>⌛</span><div><b>等待足够的真实开奖历史</b><small>至少需要 ${MIN_FORECAST_HISTORY} 期既有开奖作为预测依据；不会使用手工样例填充。</small></div></div>`;
@@ -1021,8 +1114,9 @@ function renderForecastRounds(){
     root.innerHTML=forecastCard(latest,true);
     if(note)note.textContent=`当前生成 ${rows.length} 期滚动记录。每一期都只用该期开奖之前的数据预测，结果与 API 实际开奖核对；不把预测号码自身当作开奖结果。`;
   }
-  const btn=$('#forecastMoreBtn');if(btn)btn.disabled=!rows.length;
-  if(sheetMode==='forecasts'&&$('#algoSheet')&&!$('#algoSheet').hidden)renderForecastSheet(rows);
+  const btn=$('#forecastMoreBtn');if(btn)btn.disabled=false;
+  const sheet=$('#algoSheet');
+  if(sheetMode==='forecast'&&sheet&&!sheet.hidden)renderForecastSheet(rows);
 }
 function renderAnalytics(force=false){
   const hist=currentRecords();
@@ -1037,6 +1131,66 @@ async function boot(){const savedTheme=safeGet('ka28.lab.theme')||'light';setThe
   setInterval(()=>{if(!document.hidden)fetchLatest({silent:true})},3000);
   setInterval(()=>{if(!document.hidden&&(!state.historyLoaded||state.records.length<30||state.historyError))fetchHistory({quiet:true})},30000);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)return;renderCountdown();fetchLatest({silent:true});if(!state.historyLoaded||state.records.length<30||state.historyError)fetchHistory({quiet:true})});
-  $('#refreshBtn').addEventListener('click',async()=>{const btn=$('#refreshBtn');btn.classList.add('is-syncing');try{await fetchLatest();await fetchHistory({quiet:true});renderAnalytics(true)}finally{setTimeout(()=>btn.classList.remove('is-syncing'),180)}});$('#windowSelect').addEventListener('change',()=>{killModelCacheKey='';renderAnalytics()});$('#algoLeaderboard').addEventListener('click',e=>{const row=e.target.closest('button[data-algo-id]');if(!row)return;const id=row.dataset.algoId;selectedAlgoIds.clear();selectedAlgoIds.add(id);document.querySelectorAll('#algoLeaderboard [data-algo-id]').forEach(item=>{const active=item.dataset.algoId===id;item.classList.toggle('is-active',active);item.setAttribute('aria-pressed',String(active))});renderAlgoSheet()});$('#algoSheetBody').addEventListener('change',e=>{if(e.target.id==='sheetRangeBacktest')applyRangeTuning(false)});$('#algoSheetBody').addEventListener('click',e=>{if(e.target.closest('#sheetAutoRangeBtn'))applyRangeTuning(true)});$('#closeAlgoSheet').addEventListener('click',()=>closeAlgoSheet(true));$('#clearAlgoSelection').addEventListener('click',()=>closeAlgoSheet(true));$('#algoSheetBackdrop').addEventListener('click',()=>closeAlgoSheet(true));$('#forecastMoreBtn').addEventListener('click',openForecastHistory);$('#forecastCountSelect').addEventListener('change',()=>{rollingForecastCacheKey='';renderForecastRounds()});const sheetDragTargets=[$('.sheet-grabber'),$('.sheet-head')].filter(Boolean);let sheetPointerStart=null;const activeSheet=()=>$('#algoSheet');sheetDragTargets.forEach(target=>{target.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;sheetPointerStart={y:e.clientY,t:Date.now()};target.setPointerCapture?.(e.pointerId)});target.addEventListener('pointerup',e=>{if(sheetPointerStart===null)return;const delta=e.clientY-sheetPointerStart.y;const elapsed=Math.max(1,Date.now()-sheetPointerStart.t);sheetPointerStart=null;const sheet=activeSheet();if(!sheet||sheet.hidden)return;const fast=Math.abs(delta)/elapsed>.45;if(delta<-26){if(fast||delta<-58)setSheetState('full');else if(sheet.classList.contains('sheet-peek'))setSheetState('half');else setSheetState('full')}else if(delta>24){if(sheet.classList.contains('sheet-full')||sheet.classList.contains('expanded'))setSheetState('half');else if(sheet.classList.contains('sheet-peek')){if(delta>85)closeAlgoSheet(true)}else setSheetState('peek') }});target.addEventListener('pointercancel',()=>{sheetPointerStart=null})});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#algoSheet').hidden)closeAlgoSheet(true)});$('#themeBtn').addEventListener('click',()=>setTheme(document.body.dataset.theme==='light'?'dark':'light'));$('#soundBtn').addEventListener('click',()=>{soundEnabled=!soundEnabled;$('#soundBtn').setAttribute('aria-pressed',String(soundEnabled));$('#soundBtn').textContent=soundEnabled?'🔔 提示音：开':'🔔 提示音：关';if(soundEnabled){playTripleChime();toast('已开启叮叮叮开奖提示音')}else toast('提示音已关闭')});$('#scratchBtn').addEventListener('click',()=>scratchEnabled?closeScratch():openScratch());const canvas=$('#scratchCanvas');canvas.addEventListener('pointerdown',e=>{if(!scratchEnabled)return;canvas.setPointerCapture?.(e.pointerId);scratchLastPoint=null;eraseScratch(e)});canvas.addEventListener('pointermove',e=>{if(!scratchEnabled||!e.buttons)return;eraseScratch(e)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>canvas.addEventListener(ev,()=>{scratchLastPoint=null}));let scratchResizeFrame=0;window.addEventListener('resize',()=>{if(!scratchEnabled||scratchResizeFrame)return;scratchResizeFrame=requestAnimationFrame(()=>{scratchResizeFrame=0;if(scratchEnabled)sizeScratchCanvas()})});}
+  $('#refreshBtn').addEventListener('click',async()=>{const btn=$('#refreshBtn');btn.classList.add('is-syncing');try{await fetchLatest();await fetchHistory({quiet:true});renderAnalytics(true)}finally{setTimeout(()=>btn.classList.remove('is-syncing'),180)}});$('#windowSelect').addEventListener('change',()=>{killModelCacheKey='';renderAnalytics()});$('#algoLeaderboard').addEventListener('click',e=>{const row=e.target.closest('button[data-algo-id]');if(!row)return;const id=row.dataset.algoId;selectedAlgoIds.clear();selectedAlgoIds.add(id);document.querySelectorAll('#algoLeaderboard [data-algo-id]').forEach(item=>{const active=item.dataset.algoId===id;item.classList.toggle('is-active',active);item.setAttribute('aria-pressed',String(active))});renderAlgoSheet()});$('#algoSheetBody').addEventListener('change',e=>{if(e.target.id==='sheetRangeBacktest')applyRangeTuning(false)});$('#algoSheetBody').addEventListener('click',e=>{if(e.target.closest('#sheetAutoRangeBtn'))applyRangeTuning(true)});$('#closeAlgoSheet').addEventListener('click',()=>closeAlgoSheet(true));$('#clearAlgoSelection').addEventListener('click',()=>closeAlgoSheet(true));$('#algoSheetBackdrop').addEventListener('click',()=>closeAlgoSheet(true));$('#recentRecordsOpenBtn').addEventListener('click',()=>renderRecentSheet(true));$('#forecastMoreBtn').addEventListener('click',openForecastHistory);$('#forecastCountSelect').addEventListener('change',()=>{rollingForecastCacheKey='';renderForecastRounds()});$('#drawHistoryCountSelect').addEventListener('change',()=>renderRecent(currentRecords()));const sheetDragTargets=[$('.sheet-grabber'),$('.sheet-head')].filter(Boolean);
+let sheetDrag=null,sheetDragFrame=0;
+const getSheetSnapPoints=()=>{
+  const viewport=window.visualViewport?.height||window.innerHeight;
+  const mobile=window.matchMedia?.('(max-width: 640px)').matches||false;
+  const peek=Math.max(220,Math.min(viewport*(mobile?.32:.34),mobile?330:360));
+  const half=Math.max(peek+32,Math.min(viewport*.58,mobile?580:620));
+  const full=Math.max(half+24,viewport-8);
+  return [{state:'peek',height:peek},{state:'half',height:half},{state:'full',height:full}];
+};
+const nearestSheetSnap=height=>getSheetSnapPoints().reduce((best,item)=>Math.abs(item.height-height)<Math.abs(best.height-height)?item:best,getSheetSnapPoints()[0]);
+function startSheetDrag(e,target){
+  const sheet=$('#algoSheet');if(!sheet||sheet.hidden||e.button===2||e.target.closest('button'))return;
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  sheetDrag={pointerId:e.pointerId,startY:e.clientY,startTime:performance.now(),startHeight:sheet.getBoundingClientRect().height,startState:sheet.dataset.sheetState||nearestSheetSnap(sheet.getBoundingClientRect().height).state,target};
+  sheet.classList.add('is-dragging');
+  try{target.setPointerCapture?.(e.pointerId)}catch(_){}
+  if(e.cancelable)e.preventDefault();
+}
+function moveSheetDrag(e){
+  if(!sheetDrag||e.pointerId!==sheetDrag.pointerId)return;
+  if(e.cancelable)e.preventDefault();
+  sheetDrag.latestY=e.clientY;
+  if(sheetDragFrame)return;
+  sheetDragFrame=requestAnimationFrame(()=>{
+    sheetDragFrame=0;
+    const drag=sheetDrag,sheet=$('#algoSheet');if(!drag||!sheet)return;
+    const delta=drag.latestY-drag.startY,snaps=getSheetSnapPoints();
+    const lower=snaps[0].height,upper=snaps[2].height,raw=drag.startHeight-delta;
+    let height=raw,translate=0;
+    if(raw<lower){height=lower;translate=Math.min(132,(lower-raw)*.28)}
+    else if(raw>upper){height=upper;translate=-Math.min(10,(raw-upper)*.08)}
+    sheet.style.height=`${height}px`;
+    sheet.style.transform=`translate3d(0,${translate.toFixed(2)}px,0)`;
+  });
+}
+function endSheetDrag(e,cancelled=false){
+  if(!sheetDrag||(!cancelled&&e.pointerId!==sheetDrag.pointerId))return;
+  if(sheetDragFrame){cancelAnimationFrame(sheetDragFrame);sheetDragFrame=0;}
+  const drag=sheetDrag;sheetDrag=null;
+  const sheet=$('#algoSheet');if(!sheet)return;
+  const delta=cancelled?0:e.clientY-drag.startY;
+  const elapsed=Math.max(1,performance.now()-drag.startTime),velocity=cancelled?0:delta/elapsed;
+  const desired=cancelled?drag.startHeight:drag.startHeight-delta;
+  const snaps=getSheetSnapPoints();
+  const nearest=snaps.reduce((best,item,i)=>Math.abs(item.height-desired)<Math.abs(best.item.height-desired)?{item,i}:best,{item:snaps[0],i:0});
+  let idx=nearest.i;
+  const startIdx=Math.max(0,snaps.findIndex(x=>x.state===drag.startState));
+  if(!cancelled&&Math.abs(delta)>18&&velocity<-.42)idx=Math.max(idx,Math.min(2,startIdx+1));
+  else if(!cancelled&&Math.abs(delta)>18&&velocity>.42)idx=Math.min(idx,Math.max(0,startIdx-1));
+  if(!cancelled&&drag.startState==='peek'&&delta>118) {closeAlgoSheet(true);return}
+  sheet.classList.remove('is-dragging');sheet.style.removeProperty('height');sheet.style.removeProperty('transform');
+  setSheetState(snaps[idx].state);
+}
+sheetDragTargets.forEach(target=>{
+  target.addEventListener('pointerdown',e=>startSheetDrag(e,target),{passive:false});
+  target.addEventListener('pointermove',moveSheetDrag,{passive:false});
+  target.addEventListener('pointerup',e=>endSheetDrag(e,false));
+  target.addEventListener('pointercancel',e=>endSheetDrag(e,true));
+  target.addEventListener('lostpointercapture',e=>{if(sheetDrag&&e.pointerId===sheetDrag.pointerId)endSheetDrag(e,true)});
+});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#algoSheet').hidden)closeAlgoSheet(true)});$('#themeBtn').addEventListener('click',toggleThemeFromButton);$('#soundBtn').addEventListener('click',()=>{soundEnabled=!soundEnabled;$('#soundBtn').setAttribute('aria-pressed',String(soundEnabled));$('#soundBtn').textContent=soundEnabled?'🔔 提示音：开':'🔔 提示音：关';if(soundEnabled){playTripleChime();toast('已开启叮叮叮开奖提示音')}else toast('提示音已关闭')});$('#scratchBtn').addEventListener('click',()=>scratchEnabled?closeScratch():openScratch());const canvas=$('#scratchCanvas');canvas.addEventListener('pointerdown',e=>{if(!scratchEnabled)return;canvas.setPointerCapture?.(e.pointerId);scratchLastPoint=null;eraseScratch(e)});canvas.addEventListener('pointermove',e=>{if(!scratchEnabled||!e.buttons)return;eraseScratch(e)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>canvas.addEventListener(ev,()=>{scratchLastPoint=null}));let scratchResizeFrame=0;window.addEventListener('resize',()=>{if(!scratchEnabled||scratchResizeFrame)return;scratchResizeFrame=requestAnimationFrame(()=>{scratchResizeFrame=0;if(scratchEnabled)sizeScratchCanvas()})});}
 window.__KA28_START_AFTER_AUTH=boot;
 })();
