@@ -22,12 +22,12 @@ function opposite(c){ return {'大单':'小双','小双':'大单','大双':'小�
 function recommend(c){ const o=opposite(c); return COMBOS.filter(x=>x!==c).sort((a,b)=>(a===o?-1:1)); }
 
 /* ============================================================
-   第二步：收录全部算法（共 41 个）
+   第二步：收录 49 个可回测公式（另有 2 个融合模型）
    每个算法：{id, name, src, fn(history)} -> {killGroup} 或 null
    history[0]=最新一期, history[1]=上一期... 由新到旧
    ============================================================ */
 const ALGOS = [];
-function add(id,name,src,fn){ ALGOS.push({id,name,src,fn}); }
+function add(id,name,src,fn,formula=''){ ALGOS.push({id,name,src,fn,formula}); }
 
 /* ---------- 李商隐算法19 系列（A口径，算法1-19，缺6） ---------- */
 // 算法1
@@ -76,12 +76,27 @@ add('A08','算法8','李商隐算法19',h=>{
   if(!h[0]) return null; const p=h[0];
   let r=(p.sum*p.nums[0]+7)%27+1; return {killGroup:typeA(r)};
 });
-// 算法9
-add('A09','算法9','李商隐算法19',h=>{
-  if(!h[0]) return null; const p=h[0],c=p.nums;
-  let product=(c[0]*c[1]*c[2]+p.sum)%27; if(product<=0)product=1;
-  return {killGroup:typeA(product)};
-});
+// 来源：原始算法源页的 forest3（三期共振法）。
+// 为保持 49 个公式的既有数量，使用 A09 槽位；另两个融合模型仍在独立投票层。
+add('A09','素数黄金共振杀组','森林算法 3 · 三期共振法',h=>{
+  if(!Array.isArray(h)||h.length<3||h.slice(0,3).some(r=>!Number.isFinite(Number(r.sum))))return null;
+  const primes=[2,3,5,7,11,13,17,19,23,29];
+  const nearestPrime=value=>primes.reduce((best,p)=>Math.abs(p-value)<Math.abs(best-value)?p:best,primes[0]);
+  const primeSums=h.slice(0,3).map(r=>nearestPrime(Number(r.sum)));
+  const product=primeSums.reduce((a,b)=>a*b,1);
+  let foldedRoot=Math.abs(Math.trunc(product));
+  while(foldedRoot>=28)foldedRoot=String(foldedRoot).split('').reduce((a,d)=>a+Number(d),0);
+  let resonance=foldedRoot+Math.floor(foldedRoot*618/1000);
+  while(resonance>27)resonance-=27;
+  while(resonance<0)resonance+=27;
+  const mapped=typeA(resonance),kill=opposite(mapped);
+  // 与来源实现一致：双组按 0–27 三球和值理论分布排序，排除杀号后取前两组。
+  const groupChance=Object.fromEntries(COMBOS.map(g=>[g,0]));
+  for(let sum=0;sum<=27;sum++)groupChance[typeA(sum)]+=theoretical[sum];
+  const priority=COMBOS.slice().sort((a,b)=>groupChance[b]-groupChance[a]||(a<b?-1:a>b?1:0));
+  const recommends=priority.filter(g=>g!==kill).slice(0,2);
+  return {killGroup:kill,recommends,sourceSummary:{primeSums,product,foldedRoot,resonance,mapped,kill,method:'forest3 / 三期共振法'}};
+},'来源模型：森林算法 3（三期共振法）\nP₁、P₂、P₃ = 最近三期和值各自最邻近的素数（候选素数：2, 3, 5, 7, 11, 13, 17, 19, 23, 29）\nM = P₁ × P₂ × P₃\nR = 对 M 取绝对整数部分；当 R ≥ 28 时反复做十进制数字和折叠\nG = R + floor(R × 0.618)；若 G > 27，则反复减 27\n基础形态 = G < 14 ? 小 : 大，单双按 G 的奇偶决定\n杀号 = 基础形态的对角形态（小单↔大双；小双↔大单）\n二门 = 按 0–27 三球和值理论分布排序，排除杀号后取前两组\n说明：来源模型未原生输出三门或特码；三门及和值候选由 KA28 的补充参考模块展示，并会注明非该公式原始输出');
 // 算法10
 add('A10','算法10','李商隐算法19',h=>{
   if(!h[0]) return null; const p=h[0];
@@ -429,7 +444,7 @@ function cacheKeno(id,nums){
   const keys=Object.keys(cache);for(const k of keys.slice(0,Math.max(0,keys.length-250)))delete cache[k];
   safeSet(STORAGE.keno,JSON.stringify(cache));
 }
-function parseDraw(d){if(!d||typeof d!=='object')return null;const digits=[Number(d.n1),Number(d.n2),Number(d.n3)];if(!digits.every(n=>Number.isInteger(n)&&n>=0&&n<=9))return null;const sum=digits.reduce((a,b)=>a+b,0);const id=String(d.nbr??d.id??'');if(!id)return null;let keno=validKeno(d.keno??d.keno20??d.keno_numbers??d.kenoNumbers??d.original_keno??d.originalKeno??d.numbers20);const cache=readKenoCache();if(keno.length===20)cacheKeno(id,keno);else if(cache[id])keno=validKeno(cache[id]);return {id,digits,sum,time:String(d.time||''),combo:String(d.combo||comboOf(sum)),shape:String(d.shape||shapeOf(digits)),dragon:String(d.dragon||dragonOf(digits)),edge:String(d.pos||edgeOf(sum)),extreme:String(d.extreme||extremeOf(sum)),keno,source:'API'} }
+function parseDraw(d){if(!d||typeof d!=='object')return null;const digits=[Number(d.n1),Number(d.n2),Number(d.n3)];if(!digits.every(n=>Number.isInteger(n)&&n>=0&&n<=9))return null;const sum=digits.reduce((a,b)=>a+b,0);const id=String(d.nbr??d.id??'');if(!id)return null;let keno=validKeno(d.keno??d.keno20??d.keno_numbers??d.kenoNumbers??d.original_keno??d.originalKeno??d.numbers20);const cache=readKenoCache();if(keno.length===20)cacheKeno(id,keno);else if(cache[id])keno=validKeno(cache[id]);return {id,digits,sum,time:String(d.time||''),opentime:d.opentime??d.open_time??d.timestamp??null,combo:String(d.combo||comboOf(sum)),shape:String(d.shape||shapeOf(digits)),dragon:String(d.dragon||dragonOf(digits)),edge:String(d.pos||edgeOf(sum)),extreme:String(d.extreme||extremeOf(sum)),keno,source:'API'} }
 function normalizeTime(t){if(!t)return'—';return String(t).replace('T',' ').replace(/([+-]\d\d:\d\d|Z)$/,'').slice(0,19)}
 function sumOf(r){return r.digits.reduce((a,b)=>a+b,0)}
 function comboOf(sum){return (sum<=13?'小':'大')+(sum%2?'单':'双')}
@@ -439,7 +454,7 @@ function dragonOf(d){return d[0]>d[2]?'龙':d[0]<d[2]?'虎':'和'}
 function shapeOf(d){const u=new Set(d).size;if(u===1)return'豹子';if(u===2)return'对子';const a=[...d].sort((x,y)=>x-y);return a[1]===a[0]+1&&a[2]===a[1]+1?'顺子':'杂六'}
 function enrich(r){r.sum=Number.isFinite(r.sum)?r.sum:sumOf(r);r.combo=r.combo||comboOf(r.sum);r.edge=r.edge||edgeOf(r.sum);r.extreme=r.extreme||extremeOf(r.sum);r.dragon=r.dragon||dragonOf(r.digits);r.shape=r.shape||shapeOf(r.digits);r.keno=validKeno(r.keno);if(r.keno.length===20)cacheKeno(r.id,r.keno);return r}
 function currentRecords(){return state.records.slice().sort((a,b)=>Number(a.id)-Number(b.id))}
-function recordStorageSignature(r){return [String(r?.id??''),String(r?.time??''),(r?.digits||[]).join(','),String(r?.sum??''),validKeno(r?.keno).join(',')].join('|')}
+function recordStorageSignature(r){return [String(r?.id??''),String(r?.time??''),String(r?.opentime??''),(r?.digits||[]).join(','),String(r?.sum??''),validKeno(r?.keno).join(',')].join('|')}
 function mergeDraws(draws){
   const m=new Map(state.records.map(r=>[String(r.id),r]));
   const kcache=readKenoCache();
@@ -475,14 +490,14 @@ function setStatus(text,type='ok'){
   else if(/显示缓存|缓存数据/.test(detail))compact='缓存';
   else if(detail.length>7)compact=detail.slice(0,6)+'…';
   if(label){label.textContent=compact;label.title=detail;label.setAttribute('aria-label',detail)}
-  if(status){status.title=detail;status.setAttribute('aria-label','API 状态：'+detail)}
+  if(status){status.title=detail;status.setAttribute('aria-label','API 状态：'+detail);status.classList.toggle('is-ok',type==='ok');status.classList.toggle('is-warn',type==='warn');status.classList.toggle('is-error',type==='err')}
   if(dot)dot.className='dot'+(type==='warn'?' warn':type==='err'?' err':'');
 }
 let toastTimer=0;function toast(msg){const e=$('#toast');e.textContent=String(msg);e.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove('show'),3100)}
 async function getJSON(path,timeout=9000){const ctrl=new AbortController();const tid=setTimeout(()=>ctrl.abort(),timeout);try{const res=await fetch(API+path,{signal:ctrl.signal,headers:{Accept:'application/json'},cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);const j=await res.json();if(j?.ok===false)throw new Error(j.error?.message||'API 返回错误');return j}finally{clearTimeout(tid)}}
 function getDrawFromLatest(j){return j?.data?.draw??j?.data?.item??null}
 function setCountdown(j){const c=j?.data?.countdown;const sec=Number(c?.seconds);const at=Number(c?.next_draw_at);state.countdownSeconds=Number.isFinite(sec)&&sec>=0?sec:null;state.nextDrawAt=Number.isFinite(at)&&at>1e12?at:(state.countdownSeconds===null?null:Date.now()+state.countdownSeconds*1000)}
-function drawDataSignature(r){if(!r)return '';return [String(r.id??''),String(r.time??''),(r.digits||[]).join(','),String(r.sum??''),validKeno(r.keno).join(',')].join('|')}
+function drawDataSignature(r){if(!r)return '';return [String(r.id??''),String(r.time??''),String(r.opentime??''),(r.digits||[]).join(','),String(r.sum??''),validKeno(r.keno).join(',')].join('|')}
 async function fetchLatest({silent=false}={}){
   if(state.loading)return;state.loading=true;
   try{
@@ -530,7 +545,16 @@ async function fetchHistory({quiet=true}={}){
   }
 }
 function latestDraw(){return state.latest||state.records[state.records.length-1]||null}
-let scratchPrivacySnapshot=null;
+function setDataReady(ready){
+  const isReady=Boolean(ready);
+  document.body.dataset.dataReady=isReady?'true':'false';
+  document.querySelectorAll('[data-skeleton-region]').forEach(el=>el.setAttribute('aria-busy',String(!isReady)));
+  if(isReady&&!latestDraw()){
+    const tags=$('#drawTags');
+    if(tags){tags.querySelectorAll('.skeleton-placeholder').forEach(el=>el.remove());if(!tags.children.length)tags.innerHTML='<span class="chip">等待 API 开奖数据</span>'}
+  }
+}
+let scratchPrivacySnapshot=null,scratchRevealedForDraw=false;
 let analyticsRenderSignature="";
 function drawTags(r){const s=r.sum;const tags=[{v:s<=13?'小':'大',c:''},{v:s%2?'单':'双',c:'blue'},{v:r.combo,c:'amber'},{v:r.shape,c:'violet'},{v:'龙虎 '+r.dragon,c:'blue'},{v:'边数 '+r.edge,c:''},{v:'和值 '+s,c:'amber'}];$('#drawTags').innerHTML=tags.map(x=>`<span class="chip ${x.c}">${x.v}</span>`).join('')}
 function renderDraw(){
@@ -561,8 +585,10 @@ function renderDraw(){
   const nums=validKeno(r.keno);
   $('#kenoState').textContent=nums.length===20?'已载入 20 球':(readKenoCache()[String(r.id)]?'正在恢复号码':'API 未返回 Keno 20 球');
   $('#kenoGrid').innerHTML=nums.length===20?nums.map(n=>`<div class="keno-ball">${n}</div>`).join(''):'<div class="tag" style="grid-column:1/-1;justify-content:center;padding:12px">API 未返回 Keno 20 号码；其余开奖与预测数据仍可正常使用。</div>';
-  if(scratchEnabled)refreshScratchPrivacyAfterRender();
-  if(scratchEnabled&&isNewDraw)requestAnimationFrame(sizeScratchCanvas);
+  if(scratchEnabled){
+    if(isNewDraw||!prevId)resetScratchForNewDraw(false);
+    else if(!scratchRevealedForDraw){scratchPrivacySnapshot=captureScratchDetails();maskScratchDetails()}
+  }
 }
 function renderCountdown(){const e=$('#countdownText'),hint=$('#countdownHint');if(!state.nextDrawAt){e.textContent='--:--';hint.textContent='等待 API 下期开奖时间';return}const remain=Math.max(0,Math.ceil((state.nextDrawAt-Date.now())/1000));e.textContent=String(Math.floor(remain/60)).padStart(2,'0')+':'+String(remain%60).padStart(2,'0');hint.textContent=remain===0?'等待 API 更新开奖状态':'以 API 下期开奖时间为基准；页面每 3 秒同步一次'}
 function windowN(){return Number($('#windowSelect').value)||50}
@@ -698,10 +724,10 @@ function renderPrediction(hist){
 
 const FOUR_GROUPS=sourceAlgoPack.COMBOS;
 let killModelCacheKey='',killModelCache=null,threeDoorCacheKey='',threeDoorCache=null,rangeKillCacheKey='',rangeKillCache=null;
-let soundEnabled=false,audioContext=null,lastRenderedDrawId=null,scratchEnabled=false,scratchContext=null,scratchMoved=0,scratchLastPoint=null;
+let soundEnabled=false,audioContext=null,audioMasterGain=null,lastRenderedDrawId=null,scratchEnabled=false,scratchContext=null,scratchMoved=0,scratchLastPoint=null;
 let rangeBacktestPeriod=Math.max(10,Math.min(100,Number(safeGet('ka28.rangeBacktestPeriod'))||30));
-const selectedAlgoIds=new Set();let currentAlgoRankings=[];let sheetCloseTimer=0;let sheetMode='algo';
-function legacyHistory(hist){return hist.slice().reverse().map(r=>({expect:String(r.id),nums:r.digits.slice(),sum:r.sum,type:sourceAlgoPack.typeA(r.sum)}))}
+const selectedAlgoIds=new Set();let currentAlgoRankings=[];let algoRankExpanded=false;let sheetCloseTimer=0;let sheetMode='algo';
+function legacyHistory(hist){return hist.slice().reverse().map(r=>({expect:String(r.id),nums:r.digits.slice(),sum:r.sum,type:sourceAlgoPack.typeA(r.sum),time:r.time||'',opentime:r.opentime??r.timestamp??null}))}
 function calcOwnGroupModel(hist){
   const prior={};const theoreticalGroup={};FOUR_GROUPS.forEach(g=>{theoreticalGroup[g]=0});
   for(let sum=0;sum<=27;sum++)theoreticalGroup[sourceAlgoPack.typeA(sum)]+=theoretical[sum];
@@ -738,21 +764,30 @@ function threeDoorModel(hist){const key=[hist.length,hist[0]?.id,hist.at(-1)?.id
 function renderAlgoLeaderboard(hist,models){
   const root=$('#algoLeaderboard');if(!root)return;
   const windowTag=$('#algoRankWindow');if(windowTag)windowTag.textContent=`最近 ${hist.length||windowN()} 期窗口`;
-  if(!hist.length||!models){currentAlgoRankings=[];root.innerHTML='<div class="tag">历史样本不足，暂时无法排行</div>';selectedAlgoIds.clear();if(sheetMode==='algo')closeAlgoSheet(false);return}
+  if(!hist.length||!models){currentAlgoRankings=[];root.innerHTML='<div class="tag">历史样本不足，暂时无法排行</div>';const actions=$('#algoRankActions');if(actions)actions.hidden=true;selectedAlgoIds.clear();if(sheetMode==='algo')closeAlgoSheet(false);return}
   const adapted=legacyHistory(hist);
   const items=sourceAlgoPack.ALGOS.map(algo=>{
     const st=models.stats?.[algo.id]||{hit:0,tested:0,rate:0,weight:0};
     let prediction=null;try{prediction=algo.fn(adapted)}catch(_){prediction=null}
-    const kill=prediction?.killGroup;
-    if(!FOUR_GROUPS.includes(kill))return null;
+    const rawKill=prediction?.killGroup,hasKill=FOUR_GROUPS.includes(rawKill),kill=hasKill?rawKill:'—';
     const tested=Number(st.tested)||0,hit=Number(st.hit)||0,rate=tested?hit/tested:0;
-    const rest=FOUR_GROUPS.filter(g=>g!==kill).sort((a,b)=>(models.tally[b]||0)-(models.tally[a]||0));
-    return {id:algo.id,name:algo.name,source:algo.src,hit,tested,rate,smoothedRate:Number(st.rate)||0,weight:Number(st.weight)||0,kill,twoGroups:rest.slice(0,2),threeGroups:rest,output:prediction};
-  }).filter(Boolean).sort((a,b)=>b.rate-a.rate||b.tested-a.tested||b.weight-a.weight||a.id.localeCompare(b.id)).slice(0,3);
+    const rest=FOUR_GROUPS.filter(g=>g!==rawKill).sort((a,b)=>(models.tally[b]||0)-(models.tally[a]||0));
+    const ownTwo=Array.isArray(prediction?.recommends)?prediction.recommends.filter(g=>FOUR_GROUPS.includes(g)).slice(0,2):null;
+    const ownThree=Array.isArray(prediction?.mainCandidates)?prediction.mainCandidates.filter(g=>FOUR_GROUPS.includes(g)).slice(0,3):null;
+    return {id:algo.id,name:algo.name,source:algo.src,formula:algo.formula||'',hit,tested,rate,smoothedRate:Number(st.rate)||0,weight:Number(st.weight)||0,kill,hasKill,
+      twoGroups:ownTwo?.length===2?ownTwo:rest.slice(0,2),threeGroups:ownThree?.length===3?ownThree:rest.slice(0,3),
+      specialCodes:Array.isArray(prediction?.specialCodes)?prediction.specialCodes.slice(0,4):[],output:prediction};
+  }).sort((a,b)=>b.rate-a.rate||b.tested-a.tested||b.weight-a.weight||a.id.localeCompare(b.id));
   currentAlgoRankings=items;
   for(const id of [...selectedAlgoIds])if(!items.some(x=>x.id===id))selectedAlgoIds.delete(id);
-  root.innerHTML=items.length?items.map((x,i)=>{const ratePct=Math.max(0,Math.min(100,Number(x.rate)*100||0));return `<button type="button" class="algo-leader-row${selectedAlgoIds.has(x.id)?' is-active':''}" data-algo-id="${esc(x.id)}" aria-pressed="${selectedAlgoIds.has(x.id)?'true':'false'}" aria-label="打开${esc(x.name)}算法详情"><span class="algo-leader-rank r${i+1}">#${i+1}</span><span class="algo-leader-name"><b>${esc(x.name)}</b><small class="algo-leader-source">${esc(x.source||'内置算法')}</small><span class="algo-leader-sample">${x.hit}/${x.tested} 次避开杀组</span></span><span class="algo-leader-rate"><strong>${ratePct.toFixed(1)}%</strong><small>${x.tested<15?'样本偏少':'历史命中率'}</small><span class="algo-leader-meter" aria-hidden="true"><i style="width:${ratePct.toFixed(1)}%"></i></span></span></button>`}).join(''):'<div class="tag">当前窗口没有可输出有效杀组的算法</div>';
-  const note=$('#algoRankNote');if(note)note.textContent=`按当前窗口的逐期历史排序，共 ${items.length} 个可用算法；命中指实际组合不同于预测杀组。样本少的算法可能因随机波动排名靠前，不代表下一期胜率。点击任意算法条目打开底部面板；上滑可全屏，下滑可折叠。`;
+  const visibleItems=algoRankExpanded?items:items.slice(0,3);
+  root.classList.toggle('is-expanded',algoRankExpanded);
+  root.innerHTML=items.length?visibleItems.map(x=>{const i=items.findIndex(item=>item.id===x.id);const ratePct=Math.max(0,Math.min(100,Number(x.rate)*100||0));return `<button type="button" class="algo-leader-row${selectedAlgoIds.has(x.id)?' is-active':''}" data-algo-id="${esc(x.id)}" aria-pressed="${selectedAlgoIds.has(x.id)?'true':'false'}" aria-label="打开${esc(x.name)}算法详情"><span class="algo-leader-rank r${i+1}">#${i+1}</span><span class="algo-leader-name"><b>${esc(x.name)}</b><small class="algo-leader-source">${esc(x.source||'内置算法')}</small><span class="algo-leader-sample">${x.hit}/${x.tested} 次避开杀组${x.hasKill?'': ' · 当前输出不足'}</span></span><span class="algo-leader-rate"><strong>${ratePct.toFixed(1)}%</strong><small>${!x.hasKill?'当前无有效输出':x.tested<15?'样本偏少':'历史命中率'}</small><span class="algo-leader-meter" aria-hidden="true"><i style="width:${ratePct.toFixed(1)}%"></i></span></span></button>`}).join(''):'<div class="tag">当前窗口没有可输出有效杀组的算法</div>';
+  const rankActions=$('#algoRankActions'),rankToggle=$('#algoRankToggle'),rankCount=$('#algoRankCount');
+  if(rankActions)rankActions.hidden=items.length<=3;
+  if(rankToggle){rankToggle.setAttribute('aria-expanded',String(algoRankExpanded));rankToggle.innerHTML=algoRankExpanded?'收起列表 · 仅看前三 <span aria-hidden="true">↑</span>':`展开查看全部 ${items.length} 个公式 <span aria-hidden="true">↓</span>`;}
+  if(rankCount)rankCount.textContent=`已显示 ${visibleItems.length} / ${items.length} 个公式`;
+  const note=$('#algoRankNote');if(note)note.textContent=`共 ${items.length} 个公式，默认只显示当前历史窗口排名前三；点击“展开查看全部”可查看完整排行。排名按逐期历史避开杀组率计算，无有效当前输出的公式仍保留在列表末尾；样本少的算法可能因随机波动靠前，不代表下一期胜率。点击条目查看杀号、二门、三门、和值及回测明细。`;
   if(sheetMode==='algo'){if(selectedAlgoIds.size)renderAlgoSheet();else closeAlgoSheet(false)}
 }
 function setSheetState(state){
@@ -772,11 +807,19 @@ function renderAlgoSheet(){
   sheet.dataset.sheetMode='algo';
   const chosen=currentAlgoRankings.filter(x=>selectedAlgoIds.has(x.id));
   const count=$('#sheetSelectionCount');if(count)count.textContent=`当前算法：${chosen[0]?.name||'—'}`;
-  const kicker=$('#algoSheetKicker');if(kicker)kicker.textContent='ALGORITHM DETAILS';$('#algoSheetTitle').textContent='算法预测内容';$('#algoSheetSubtitle').textContent='当前期输出与历史命中统计';$('#clearAlgoSelection').textContent='关闭面板';
+  const kicker=$('#algoSheetKicker');if(kicker)kicker.textContent='ALGORITHM DETAILS';$('#algoSheetTitle').textContent='算法预测与公式';$('#algoSheetSubtitle').textContent='统一展示杀组、二门、三门、和值候选与历史回测';$('#clearAlgoSelection').textContent='关闭面板';
   if(!chosen.length){sheet.classList.remove('open');backdrop.classList.remove('open');document.body.classList.remove('algo-sheet-open');clearTimeout(sheetCloseTimer);sheetCloseTimer=setTimeout(()=>{if(!selectedAlgoIds.size){sheet.hidden=true;backdrop.hidden=true}},240);return}
   const newlyOpened=sheet.hidden;
   clearTimeout(sheetCloseTimer);sheet.hidden=false;backdrop.hidden=false;document.body.classList.add('algo-sheet-open');
-  body.innerHTML=chosen.map((x,i)=>`<article class="sheet-algo-card"><div class="sheet-algo-top"><div><b>#${currentAlgoRankings.findIndex(v=>v.id===x.id)+1} · ${esc(x.name)}</b><br><small>${esc(x.source)} · 算法 ID ${esc(x.id)}</small></div><span class="tag">回测 ${x.hit}/${x.tested}</span></div><div class="sheet-metrics"><div class="sheet-metric"><span>历史杀组命中率</span><b>${(x.rate*100).toFixed(1)}%</b></div><div class="sheet-metric"><span>当前预测杀组</span><b>${esc(x.kill)}</b></div><div class="sheet-metric"><span>本次测试数</span><b>${x.tested}</b></div></div><div class="subhead" style="margin-top:12px"><span>二门组合参考</span><span class="tag">2 组</span></div><div class="sheet-groups">${x.twoGroups.map(g=>`<div class="sheet-group">${esc(g)}</div>`).join('')}</div><div class="subhead" style="margin-top:10px"><span>三组组合参考</span><span class="tag">3 组</span></div><div class="sheet-groups">${x.threeGroups.map(g=>`<div class="sheet-group">${esc(g)}</div>`).join('')}</div><p class="sheet-note">本算法原始输出为“杀组”。二门和三组是根据综合投票中其余组合的分数排序后生成的辅助参考，并非该单个公式直接输出。命中率只反映所选历史窗口，不代表下一期结果。</p></article>`).join('')+renderRangeTuningControls();
+  body.innerHTML=chosen.map(x=>{
+    const formulaBlock=x.formula?`<section class="sheet-formula"><div class="subhead"><span>公式 / 计算路线</span><span class="tag">可复核</span></div><pre>${esc(x.formula)}</pre></section>`:'';
+    const detail=x.output?.sourceSummary;
+    const sourceSummaryBlock=detail?`<section class="sheet-formula-result"><div class="subhead"><span>本期公式计算明细</span><span class="tag">${esc(detail.method||'来源模型')}</span></div><div class="sheet-formula-grid"><span>三期和值对应素数</span><b>${detail.primeSums.map(n=>String(n)).join(' × ')}</b><span>素数连乘</span><b>${detail.product}</b><span>数字折叠数根</span><b>${detail.foldedRoot}</b><span>0.618 共振值</span><b>${detail.resonance}</b><span>基础映射形态</span><b>${esc(detail.mapped)}</b><span>对角杀号</span><b>${esc(detail.kill)}</b></div><p class="sheet-note">计算明细来自内置的 forest3（三期共振法）规则。模型原生输出杀组和二门；三门、和值仅作为补充参考。</p></section>`:'';
+    const sumValues=x.specialCodes.length?x.specialCodes.map(Number).filter(n=>Number.isInteger(n)&&n>=0&&n<=27):Array.from(document.querySelectorAll('#sumFourCodes .sum-four-card strong')).map(el=>Number(el.textContent)).filter(n=>Number.isInteger(n)&&n>=0&&n<=27);
+    const sumSource=x.specialCodes.length?'此算法原始输出的 0–27 特码/和值候选':'页面当前和值参考（由独立和值模型生成）';
+    const sumBlock=`<div class="sheet-summary-block"><div class="subhead"><span>和值候选</span><span class="tag">${sumValues.length} 个</span></div><div class="sheet-sum-values">${sumValues.length?sumValues.map((n,i)=>`<span class="sheet-sum-value"><small>${String(i+1).padStart(2,'0')}</small><b>${String(n).padStart(2,'0')}</b></span>`).join(''):'<span class="tag">样本不足</span>'}</div><p class="sheet-note">${sumSource}。若显示的是独立和值参考，它并非该单个杀组公式直接产出。</p></div>`;
+    return `<article class="sheet-algo-card"><div class="sheet-algo-top"><div><b>#${currentAlgoRankings.findIndex(v=>v.id===x.id)+1} · ${esc(x.name)}</b><br><small>${esc(x.source)} · 算法 ID ${esc(x.id)}</small></div><span class="tag">回测 ${x.hit}/${x.tested}</span></div>${formulaBlock}${sourceSummaryBlock}<div class="sheet-metrics"><div class="sheet-metric"><span>历史杀组避开率</span><b>${(x.rate*100).toFixed(1)}%</b></div><div class="sheet-metric"><span>当前预测杀组</span><b>${esc(x.kill)}</b></div><div class="sheet-metric"><span>回测样本</span><b>${x.tested}</b></div></div><div class="subhead" style="margin-top:12px"><span>杀号总结</span><span class="tag">1 组</span></div><div class="sheet-kill-summary"><b>${esc(x.kill)}</b><small>预测杀组 · 以所选历史窗口逐期回测</small></div><div class="subhead" style="margin-top:12px"><span>二门组合</span><span class="tag">2 组</span></div><div class="sheet-groups">${x.twoGroups.map(g=>`<div class="sheet-group">${esc(g)}</div>`).join('')}</div><div class="subhead" style="margin-top:10px"><span>三门组合</span><span class="tag">3 组</span></div><div class="sheet-groups">${x.threeGroups.map(g=>`<div class="sheet-group">${esc(g)}</div>`).join('')}</div>${sumBlock}<p class="sheet-note">${x.hasKill?'':'当前样本暂未产生有效杀组输出；二门、三门仅作该窗口的综合组合参考。'}历史命中率只反映真实开奖历史中的回测结果，不代表下一期概率或命中保证。二门/三门若不是该算法原生输出，会明确按其他组合参考逻辑生成。</p></article>`;
+  }).join('')+renderRangeTuningControls();
   if(newlyOpened)setSheetState('half');
   requestAnimationFrame(()=>{sheet.classList.add('open');backdrop.classList.add('open')});
 }
@@ -846,6 +889,25 @@ function goblinEvaluate(prediction,actualSum){
   return {killHit:special||actualGroup!==prediction.kill,doubleHit:special||prediction.doubleGroups.includes(actualGroup),threeDoorHit:prediction.threeDoor.includes(actualGroup),special,actualGroup};
 }
 function nextIssueLabel(issue){const text=String(issue??'');return /^\d+$/.test(text)?String(Number(text)+1).padStart(text.length,'0'):'下一期'}
+/* 五方星序差集算法：基于用户提供的“五方位概率分析”HTML移植。
+   计算路线：目标期种子随机数 → 五方位组 → 主候选三门 → 副候选差集杀号 → 双组 → 特码筛选。
+   预测时只读 target draw 之前的历史，不读目标期开奖数据。 */
+const SEQ_GROUP_MAP=[2,0,1,0,1,1,2,2,1,0,1,2,0,0,2,0,2,0,2,1,2,2,1,0,0,1,2,0];
+const SEQ_TYPE_RANGE={'小单':[1,3,5,7,9,11,13],'小双':[0,2,4,6,8,10,12],'大单':[15,17,19,21,23,25,27],'大双':[14,16,18,20,22,24,26]};
+const SEQ_TYPE_PRIORITY=['大单','大双','小单','小双'];
+function seqTypeFromSum(sum){return (sum<14?'小':'大')+(sum%2===0?'双':'单')}
+function seqGroupOf(sum){const val=SEQ_GROUP_MAP[sum];return val===0?'五':val===1?'方':'位'}
+function seqCalcT1Value(p){let num=Math.abs(p),sum=0,intPart=Math.floor(num);while(intPart>0){sum+=intPart%10;intPart=Math.floor(intPart/10)}let decimalPart=num-Math.floor(num);for(let i=0;i<3;i++){decimalPart*=10;sum+=Math.floor(decimalPart)%10}return sum}
+function seqPartners(t1){const s=t1[0],p=t1[1];return {sizePartner:s+(p==='单'?'双':'单'),parityPartner:(s==='大'?'小':'大')+p,oppositePartner:(s==='大'?'小':'大')+(p==='单'?'双':'单')}}
+function seqGenerateCandidates(randomValue,a,b,useOppositeRule){const t1=seqTypeFromSum(seqCalcT1Value(b*randomValue)),same=seqGroupOf(a)===seqGroupOf(b),partners=seqPartners(t1);let candidates;if(!useOppositeRule)candidates=same?[t1,partners.parityPartner,partners.oppositePartner]:[t1,partners.sizePartner,partners.oppositePartner];else candidates=same?[t1,partners.sizePartner,partners.oppositePartner]:[t1,partners.parityPartner,partners.oppositePartner];return [...new Set(candidates)].sort((x,y)=>SEQ_TYPE_PRIORITY.indexOf(x)-SEQ_TYPE_PRIORITY.indexOf(y)).slice(0,3)}
+function seqTimestamp(draw){const raw=draw?.opentime??draw?.timestamp;if(raw!==undefined&&raw!==null&&raw!==''){const n=Number(raw);if(Number.isFinite(n)&&n>0)return Math.floor(n>1e12?n/1000:n)}const t=Date.parse(String(draw?.time||''));return Number.isFinite(t)?Math.floor(t/1000):0}
+function seqDynamicRandom(period,prevSums,timestamp){const seedStr=`${period}_${prevSums[0]}_${prevSums[1]}_${prevSums[2]}_${timestamp}`;let hash=0;for(let i=0;i<seedStr.length;i++){hash=Math.imul(hash,31)+seedStr.charCodeAt(i);hash=hash>>>0}const seedBig=BigInt(hash);let state0=(seedBig<<32n)&0xFFFFFFFFFFFFFFFFn;let state1=(0x9E3779B97F4A7C15n^(seedBig*0xBF58476D1CE4E5B9n))&0xFFFFFFFFFFFFFFFFn;function next(){let s1=state0;const s0=state1;state0=s0;s1^=s1<<23n;s1&=0xFFFFFFFFFFFFFFFFn;state1=s1^s0^(s1>>17n)^(s0>>26n);state1&=0xFFFFFFFFFFFFFFFFn;return(state1+s0)&0xFFFFFFFFFFFFFFFFn}for(let i=0;i<3;i++)next();const high53=Number(next()>>11n);return Math.max(0,Math.min(0.9999999999999999,high53*(1/9007199254740992)))}
+function seqBuildForecast(hist){if(!Array.isArray(hist)||hist.length<5)return null;const prior=hist.slice(-Math.min(200,Math.max(5,windowN())));const latest=prior.at(-1),prev=prior.at(-2),prev3=prior.at(-3);if(!latest||!prev||!prev3)return null;const nextNum=parseInt(String(latest.id??latest.expect??''),10)+1;if(!Number.isFinite(nextNum))return null;const nextIssue=String(nextNum).padStart(7,'0'),a=Number(prev.sum),b=Number(latest.sum),timestamp=seqTimestamp(latest),prevSums=[b,a,Number(prev3.sum)];if(![...prevSums].every(n=>Number.isInteger(n)&&n>=0&&n<=27))return null;const mainRandom=seqDynamicRandom(nextNum,prevSums,timestamp),mainCandidates=seqGenerateCandidates(mainRandom,a,b,false);let kill=null,attempts=[];for(let i=1;i<=10;i++){const subRandom=seqDynamicRandom(nextNum+i,prevSums,timestamp),sub=seqGenerateCandidates(subRandom,a,b,true),diff=mainCandidates.filter(c=>!sub.includes(c));if(diff.length){kill=diff.sort((x,y)=>SEQ_TYPE_PRIORITY.indexOf(x)-SEQ_TYPE_PRIORITY.indexOf(y))[0];attempts.push(`副随机数 ${i} 差集 ${diff.join('、')} → 杀组 ${kill}`);break}attempts.push(`副随机数 ${i} 无差集`)}if(!kill){kill=[...mainCandidates].sort((x,y)=>SEQ_TYPE_PRIORITY.indexOf(y)-SEQ_TYPE_PRIORITY.indexOf(x))[0];attempts.push(`10 次无差集，按优先级回退至 ${kill}`)}const recommends=mainCandidates.filter(t=>t!==kill);const code=Math.floor(b*mainRandom)%28,targetGroup=((code%3)+1)%3,numbers=new Set();recommends.forEach(type=>(SEQ_TYPE_RANGE[type]||[]).forEach(n=>{if(n%3===targetGroup)numbers.add(n)}));const specialCodes=[...numbers].sort((x,y)=>x-y).slice(0,4);return {kill,recommends,mainCandidates,specialCodes,code,targetGroup,nextIssue,inputIssue:String(latest.id??latest.expect??''),inputSum:b,mainRandom,attempts,prevSums,timestamp}}
+function seqEvaluate(prediction,actualSum){if(!prediction||!Number.isFinite(actualSum))return {killHit:null,doubleHit:null,threeDoorHit:null,codeHit:null};const actualGroup=comboOf(actualSum);return {killHit:actualGroup!==prediction.kill,doubleHit:prediction.recommends.includes(actualGroup),threeDoorHit:prediction.mainCandidates.includes(actualGroup),codeHit:prediction.specialCodes.includes(actualSum),actualGroup}}
+function renderSequencePrediction(hist){const status=$('#sequenceStatus'),killEl=$('#sequenceKill'),poolEl=$('#sequencePool'),betsEl=$('#sequenceBets'),codesEl=$('#sequenceCodes'),codesNote=$('#sequenceCodesNote');const placeholders=(note='等待历史数据')=>{if(codesEl)codesEl.innerHTML=Array.from({length:4},(_,i)=>`<div class="sum-four-card"><span class="sum-four-kicker">序列 0${i+1}</span><strong>—</strong><small>${esc(note)}</small></div>`).join('');if(codesNote)codesNote.textContent=note};if(!hist||hist.length<5){status.textContent='样本不足';killEl.textContent=poolEl.textContent='—';betsEl.innerHTML='<span class="tag">至少需要 5 期有效历史</span>';$('#sequencePeriod').textContent='—';$('#sequenceKillNote').textContent='等待有效开奖';$('#sequencePoolNote').textContent='主候选尚未生成';$('#sequenceSteps').textContent='历史样本不足';$('#sequenceExplain').textContent='原算法要求至少 5 期开奖记录，样本不足时不输出预测。';placeholders('至少需要 5 期有效历史');return}const p=seqBuildForecast(hist);if(!p){status.textContent='数据格式待校验';killEl.textContent=poolEl.textContent='—';betsEl.innerHTML='<span class="tag">开奖记录格式待校验</span>';placeholders('当前记录格式待校验');return}status.textContent='序列规则 · 已计算';killEl.textContent=p.kill;$('#sequenceKillNote').textContent=`输入第 ${p.inputIssue} 期 · 和值 ${p.inputSum}`;poolEl.textContent=p.mainCandidates.join(' / ');$('#sequencePoolNote').textContent='主候选三门；杀号组可能与主池重叠前已剔除';$('#sequencePeriod').textContent=`预测第 ${p.nextIssue} 期`;betsEl.innerHTML=p.recommends.map((g,i)=>`<div class="combo-pill"><b>${esc(g)}</b><small>推荐双组 ${i+1}</small></div>`).join('');if(codesEl)codesEl.innerHTML=p.specialCodes.map((n,i)=>`<div class="sum-four-card"><span class="sum-four-kicker">序列 0${i+1}</span><strong>${String(n).padStart(2,'0')}</strong><small>${esc(seqTypeFromSum(n))} · 特码候选</small></div>`).join('');if(codesNote)codesNote.textContent=`第 ${p.nextIssue} 期 · 按目标余数 ${p.targetGroup} 从双组范围筛出 ${p.specialCodes.length} 个候选（原算法最多 4 个，不强行补齐）。`;$('#sequenceSteps').textContent=`主随机数 R = ${p.mainRandom.toFixed(10)}\n输入和值序列：${p.prevSums.join(' / ')} · 时间种子 ${p.timestamp}\n主候选三门：${p.mainCandidates.join('、')}\n${p.attempts.join('\n')}\n最终杀号组：${p.kill}\n推荐双组：${p.recommends.join('、')}\n特码 code=${p.code}，目标余数=${p.targetGroup} → ${p.specialCodes.join('、')||'无候选'}`;$('#sequenceExplain').textContent=`使用第 ${p.inputIssue} 期及之前数据，输出用于第 ${p.nextIssue} 期。杀组、双组、三门与特码分别核验；不把 13/14 直接记为命中。`;}
+function setActiveForecastAlgorithm(mode,notify=false){const next=mode==='sequence'?'sequence':'goblin';activeForecastAlgorithm=next;const panel=$('#goblinPanel');if(panel){panel.dataset.activeAlgo=next;const goblinSlide=$('#goblinSlide'),sequenceSlide=$('#sequenceSlide');if(goblinSlide){goblinSlide.classList.toggle('is-active',next==='goblin');goblinSlide.setAttribute('aria-hidden',String(next!=='goblin'));goblinSlide.inert=next!=='goblin'}if(sequenceSlide){sequenceSlide.classList.toggle('is-active',next==='sequence');sequenceSlide.setAttribute('aria-hidden',String(next!=='sequence'));sequenceSlide.inert=next!=='sequence'}}const label=$('#algoModeLabel'),hint=$('#algoSwipeHint'),gdot=$('#algoDotGoblin'),sdot=$('#algoDotSequence');if(label)label.textContent=next==='sequence'?'2 / 2 · 五方星序差集算法':'1 / 2 · 哥布林星轨算法';if(hint)hint.textContent=next==='sequence'?'→ 右滑恢复哥布林星轨算法':'← 左滑查看五方星序差集算法';if(gdot)gdot.classList.toggle('is-active',next==='goblin');if(sdot)sdot.classList.toggle('is-active',next==='sequence');const prev=$('#algoPrevBtn'),nxt=$('#algoNextBtn');if(prev)prev.disabled=next==='goblin';if(nxt)nxt.disabled=next==='sequence';renderForecastRounds();if(notify)toast(next==='sequence'?'已切换：五方星序差集算法 · 预测记录同步切换':'已恢复：哥布林星轨算法 · 预测记录同步恢复')}
+function initAlgorithmSwipe(){const panel=$('#goblinPanel');if(!panel)return;let pointerStart=null,touchStart=null;const finishSwipe=(dx,dy)=>{if(Math.abs(dx)<48||Math.abs(dx)<Math.abs(dy)*1.25)return;if(dx<0)setActiveForecastAlgorithm('sequence',true);else setActiveForecastAlgorithm('goblin',true)};panel.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(e.target.closest('button,summary,select,input,a')){pointerStart=null;return}pointerStart={x:e.clientX,y:e.clientY,id:e.pointerId};try{panel.setPointerCapture(e.pointerId)}catch(_){}});panel.addEventListener('pointerup',e=>{if(!pointerStart||pointerStart.id!==e.pointerId)return;const dx=e.clientX-pointerStart.x,dy=e.clientY-pointerStart.y;pointerStart=null;finishSwipe(dx,dy)});panel.addEventListener('pointercancel',()=>{pointerStart=null});panel.addEventListener('touchstart',e=>{if(!e.touches||e.touches.length!==1){touchStart=null;return}const t=e.touches[0];if(e.target.closest('button,summary,select,input,a')){touchStart=null;return}touchStart={x:t.clientX,y:t.clientY}},{passive:true});panel.addEventListener('touchend',e=>{if(!touchStart||!e.changedTouches||!e.changedTouches.length)return;const t=e.changedTouches[0],dx=t.clientX-touchStart.x,dy=t.clientY-touchStart.y;touchStart=null;finishSwipe(dx,dy)},{passive:true});panel.addEventListener('touchcancel',()=>{touchStart=null},{passive:true});$('#algoPrevBtn')?.addEventListener('click',()=>setActiveForecastAlgorithm('goblin',true));$('#algoNextBtn')?.addEventListener('click',()=>setActiveForecastAlgorithm('sequence',true));panel.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')setActiveForecastAlgorithm('sequence',true);else if(e.key==='ArrowRight')setActiveForecastAlgorithm('goblin',true)})}
+
 function renderGoblinPrediction(hist){
   const status=$('#goblinStatus'),killEl=$('#goblinKill'),poolEl=$('#goblinPool'),betsEl=$('#goblinBets');
   const fourEl=$('#goblinFourCodes'),fourNote=$('#goblinFourNote');
@@ -888,7 +950,27 @@ function renderKillPrediction(hist){
   $('#killVoteBars').innerHTML=FOUR_GROUPS.map(g=>`<div class="vote-row"><span>${g}</span><i style="width:${Math.max(2,models.tally[g]/max*100)}%"></i><b>${models.tally[g].toFixed(1)}</b></div>`).join('');
   renderAlgoLeaderboard(modelWindow,models);
 }
-function playTripleChime(){try{const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return;audioContext=audioContext||new Ctx();if(audioContext.state==='suspended')audioContext.resume();[880,988,1175].forEach((f,i)=>{const start=audioContext.currentTime+i*.17;const osc=audioContext.createOscillator(),gain=audioContext.createGain();osc.type='sine';osc.frequency.setValueAtTime(f,start);gain.gain.setValueAtTime(.0001,start);gain.gain.exponentialRampToValueAtTime(.12,start+.025);gain.gain.exponentialRampToValueAtTime(.0001,start+.14);osc.connect(gain);gain.connect(audioContext.destination);osc.start(start);osc.stop(start+.15)})}catch(e){console.warn('提示音不可用',e)}}
+function playTripleChime(){
+  try{
+    const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return;
+    audioContext=audioContext||new Ctx();
+    if(!audioMasterGain){audioMasterGain=audioContext.createGain();audioMasterGain.gain.value=.92;audioMasterGain.connect(audioContext.destination)}
+    if(audioContext.state==='suspended')audioContext.resume().catch(()=>{});
+    // Stronger, brighter three-note chime. Keep the peak below full scale;
+    // final loudness still follows the device/browser volume setting.
+    [1046.5,1318.5,1568].forEach((f,i)=>{
+      const start=audioContext.currentTime+.025+i*.205;
+      const main=audioContext.createOscillator(),mainGain=audioContext.createGain();
+      main.type='triangle';main.frequency.setValueAtTime(f,start);
+      mainGain.gain.setValueAtTime(.0001,start);mainGain.gain.exponentialRampToValueAtTime(.34,start+.012);mainGain.gain.exponentialRampToValueAtTime(.0001,start+.235);
+      main.connect(mainGain);mainGain.connect(audioMasterGain);main.start(start);main.stop(start+.245);
+      const overtone=audioContext.createOscillator(),overGain=audioContext.createGain();
+      overtone.type='sine';overtone.frequency.setValueAtTime(f*2,start);
+      overGain.gain.setValueAtTime(.0001,start);overGain.gain.exponentialRampToValueAtTime(.075,start+.01);overGain.gain.exponentialRampToValueAtTime(.0001,start+.17);
+      overtone.connect(overGain);overGain.connect(audioMasterGain);overtone.start(start);overtone.stop(start+.18);
+    });
+  }catch(e){console.warn('提示音不可用',e)}
+}
 function sizeScratchCanvas(){const canvas=$('#scratchCanvas'),zone=$('#scratchSurface');if(!canvas||!zone)return;const r=zone.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);if(r.width<2||r.height<2)return;canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';const ctx=canvas.getContext('2d');scratchContext=ctx;ctx.setTransform(dpr,0,0,dpr,0,0);const g=ctx.createLinearGradient(0,0,r.width,r.height);g.addColorStop(0,'#cdd7e0');g.addColorStop(.25,'#eef3f7');g.addColorStop(.5,'#9eacb8');g.addColorStop(.75,'#e3eaf0');g.addColorStop(1,'#a5b1bd');ctx.globalCompositeOperation='source-over';ctx.fillStyle=g;ctx.fillRect(0,0,r.width,r.height);ctx.strokeStyle='rgba(255,255,255,.34)';ctx.lineWidth=1;for(let x=-r.height;x<r.width;x+=18){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+r.height,r.height);ctx.stroke()}ctx.fillStyle='rgba(23,40,57,.88)';ctx.textAlign='center';ctx.font='800 17px system-ui,sans-serif';ctx.fillText('KA28开奖网',r.width/2,r.height/2-5);ctx.font='600 11px system-ui,sans-serif';ctx.fillText('刮开查看数字与和值',r.width/2,r.height/2+17)}
 function captureScratchDetails(){return {combo:$('#drawCombo').innerHTML,shape:$('#drawShape').innerHTML,tags:$('#drawTags').innerHTML}}
 function maskScratchDetails(){
@@ -899,17 +981,36 @@ function maskScratchDetails(){
   const count=Math.max(5,holder.children.length||0);
   tags.innerHTML=Array.from({length:count},()=>'<span class="chip">—</span>').join('');
 }
-function refreshScratchPrivacyAfterRender(){if(!scratchEnabled)return;scratchPrivacySnapshot=captureScratchDetails();maskScratchDetails()}
+function resetScratchForNewDraw(showToast=false){
+  if(!scratchEnabled)return;
+  scratchRevealedForDraw=false;scratchLastPoint=null;scratchMoved=0;
+  scratchPrivacySnapshot=captureScratchDetails();maskScratchDetails();
+  const canvas=$('#scratchCanvas'),btn=$('#scratchBtn');
+  if(canvas)canvas.classList.add('active');
+  if(btn){btn.textContent='收起咪牌';btn.setAttribute('aria-pressed','true')}
+  requestAnimationFrame(sizeScratchCanvas);
+  if(showToast)toast('新期开奖已更新，咪牌自动重新覆盖，可以继续刮奖');
+}
 function restoreScratchDetails(){if(!scratchPrivacySnapshot)return;$('#drawCombo').innerHTML=scratchPrivacySnapshot.combo;$('#drawShape').innerHTML=scratchPrivacySnapshot.shape;$('#drawTags').innerHTML=scratchPrivacySnapshot.tags;scratchPrivacySnapshot=null}
 function openScratch(){
   if(scratchEnabled)return;
-  scratchPrivacySnapshot=captureScratchDetails();scratchEnabled=true;maskScratchDetails();
-  $('#scratchCanvas').classList.add('active');$('#scratchBtn').textContent='收起咪牌';
-  requestAnimationFrame(sizeScratchCanvas);toast('咪牌已开启，组合、形态与分类提示已隐藏；刮开查看开奖号码');
+  scratchEnabled=true;scratchRevealedForDraw=false;
+  resetScratchForNewDraw(false);
+  const btn=$('#scratchBtn');if(btn){btn.textContent='收起咪牌';btn.setAttribute('aria-pressed','true')}
+  toast('咪牌已开启；刮开后保持开启，下期开奖自动重新覆盖');
 }
 function closeScratch(){
-  scratchEnabled=false;$('#scratchCanvas').classList.remove('active');$('#scratchBtn').textContent='咪牌';
+  scratchEnabled=false;scratchRevealedForDraw=false;
+  const canvas=$('#scratchCanvas'),btn=$('#scratchBtn');if(canvas)canvas.classList.remove('active');
+  if(btn){btn.textContent='咪牌';btn.setAttribute('aria-pressed','false')}
   scratchLastPoint=null;scratchMoved=0;restoreScratchDetails();
+}
+function revealScratchForCurrentDraw(){
+  scratchRevealedForDraw=true;scratchLastPoint=null;scratchMoved=0;
+  const canvas=$('#scratchCanvas'),btn=$('#scratchBtn');if(canvas)canvas.classList.remove('active');
+  restoreScratchDetails();
+  if(btn){btn.textContent='收起咪牌';btn.setAttribute('aria-pressed','true')}
+  toast('本期开奖已刮开并保持显示；咪牌仍开启，下期开奖会自动重新覆盖');
 }
 function scratchPoint(e){const r=$('#scratchCanvas').getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
 function eraseScratch(e){
@@ -922,7 +1023,7 @@ function eraseScratch(e){
   if(scratchMoved%12===0&&canvas.width*canvas.height<8e6){
     const ctx=canvas.getContext('2d');const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;let clear=0,total=0;
     for(let i=3;i<data.length;i+=4*160){total++;if(data[i]<30)clear++}
-    if(total&&clear/total>.43){closeScratch();toast('已刮开，开奖号码已显示')}
+    if(total&&clear/total>.43){revealScratchForCurrentDraw()}
   }
 }
 let themeTransitionBusy=false;
@@ -965,10 +1066,11 @@ function renderRecentSheet(openPanel=false){
 }
 
 let rollingForecastCacheKey='',rollingForecastCache=[];
+let activeForecastAlgorithm='goblin';
 const MIN_FORECAST_HISTORY=40;
 function rollingForecasts(count){
   const all=currentRecords(),focus=windowN(),wanted=Math.max(1,Math.min(50,Number(count)||20));
-  const relevant=all.slice(-Math.min(all.length,focus+wanted)).map(r=>`${r.id}:${r.sum}:${r.digits.join('')}`).join(';');
+  const relevant=all.slice(-Math.min(all.length,focus+wanted)).map(r=>`${r.id}:${r.sum}:${r.digits.join('')}:${r.opentime??''}:${r.time??''}`).join(';');
   const key=[focus,wanted,relevant].join('|');
   if(key===rollingForecastCacheKey)return rollingForecastCache;
   const out=[];
@@ -995,6 +1097,9 @@ function rollingForecasts(count){
     if(!goblin)continue;
     const goblinEval=goblinEvaluate(goblin,actualSum);
     const goblinSums=goblinFourSumCandidates(prior,focus).map(x=>Number(x.sum)).filter(n=>Number.isInteger(n)&&n>=0&&n<=27).slice(0,4);
+    const sequence=seqBuildForecast(prior);
+    if(!sequence)continue;
+    const sequenceEval=seqEvaluate(sequence,actualSum);
     out.push({
       id:String(target.id),time:String(target.time||''),digits:target.digits.slice(),actualCombo,actualSum,
       kill,comboTwo,comboThree,threeGroups,sums,
@@ -1004,6 +1109,7 @@ function rollingForecasts(count){
       threeHit:threeGroups.includes(actualCombo),
       sumHit:sums.includes(actualSum),goblinSums,goblinSumHit:goblinSums.includes(actualSum),
       goblin,goblinKillHit:goblinEval.killHit,goblinDoubleHit:goblinEval.doubleHit,goblinThreeDoorHit:goblinEval.threeDoorHit,goblinSpecial:goblinEval.special,
+      sequence,sequenceCodes:sequence.specialCodes,sequenceKillHit:sequenceEval.killHit,sequenceDoubleHit:sequenceEval.doubleHit,sequenceThreeDoorHit:sequenceEval.threeDoorHit,sequenceCodeHit:sequenceEval.codeHit,
       source:'API',priorCount:prior.length
     });
   }
@@ -1014,10 +1120,23 @@ function hitBadge(hit,successLabel='中',missLabel='死'){
   return `<span class="forecast-hit ${hit?'good':'bad'}">${hit?'🀄 '+successLabel:'🍉 '+missLabel}</span>`;
 }
 function forecastCard(r,compact=false){
+  const sequenceMode=activeForecastAlgorithm==='sequence';
+  const model=sequenceMode?r.sequence:r.goblin;
+  const modelCodes=sequenceMode?(r.sequenceCodes||[]):(r.goblinSums||[]);
+  const modelKillHit=sequenceMode?r.sequenceKillHit:r.goblinKillHit;
+  const modelDoubleHit=sequenceMode?r.sequenceDoubleHit:r.goblinDoubleHit;
+  const modelThreeHit=sequenceMode?r.sequenceThreeDoorHit:r.goblinThreeDoorHit;
+  const modelCodesHit=sequenceMode?r.sequenceCodeHit:r.goblinSumHit;
+  const modelTitle=sequenceMode?'🧭 五方星序差集算法':'🐲 哥布林·星轨算法';
+  const modelKillLabel=sequenceMode?'序列杀号组':'星轨杀号组';
+  const modelDoubleLabel=sequenceMode?'序列双组':'星轨双组';
+  const modelThreeLabel=sequenceMode?'主候选三门':'星轨三门';
+  const modelCodesLabel=sequenceMode?'序列特码':'星轨和值四码';
+  if(!model)return '<article class="forecast-round-card"><p>该期模型样本不足，未生成预测。</p></article>';
   if(compact){
     const status=(ok,yes='命中',no='未中')=>`<span class="latest-forecast-status ${ok?'is-good':'is-bad'}">${ok?yes:no}</span>`;
     const sumValues=(r.sums||[]).map(n=>esc(n)).join(' · ')||'—';
-    const goblinSums=(r.goblinSums||[]).map(n=>esc(n)).join(' · ')||'—';
+    const goblinSums=modelCodes.map(n=>esc(n)).join(' · ')||'—';
     const comboThreeText=(r.comboThree||[]).map(esc).join(' / ')||'—';
     const threeDoorText=(r.threeGroups||[]).map(esc).join(' / ')||'样本不足';
     return `<article class="forecast-round-card latest-forecast-summary">
@@ -1028,15 +1147,15 @@ function forecastCard(r,compact=false){
         <div class="latest-forecast-metric"><span>KA28 二门</span><b>${r.comboTwo.map(esc).join(' / ')||'—'}</b>${status(r.comboHit)}</div>
         <div class="latest-forecast-metric"><span>融合和值四码</span><b>${sumValues}</b>${status(r.sumHit)}</div>
       </div>
-      <section class="latest-forecast-goblin" aria-label="哥布林星轨算法回测">
-        <div class="latest-forecast-goblin-head"><b>🐲 哥布林 · 星轨回测</b><span>四项指标</span></div>
+      <section class="latest-forecast-goblin" aria-label="${esc(modelTitle)}回测">
+        <div class="latest-forecast-goblin-head"><b>${esc(modelTitle)} · 回测</b><span>四项指标</span></div>
         <div class="latest-forecast-goblin-grid">
-          <div><span>星轨杀号组</span><b>${esc(r.goblin.kill)}</b>${status(r.goblinKillHit,'避开成功','杀组出现')}</div>
-          <div><span>星轨双组</span><b>${r.goblin.doubleGroups.map(esc).join(' / ')||'—'}</b>${status(r.goblinDoubleHit)}</div>
-          <div><span>星轨三门</span><b>${r.goblin.threeDoor.map(esc).join(' / ')||'—'}</b>${status(r.goblinThreeDoorHit,'覆盖','未覆盖')}</div>
-          <div><span>星轨和值四码</span><b>${goblinSums}</b>${status(!!r.goblinSumHit)}</div>
+          <div><span>${esc(modelKillLabel)}</span><b>${esc(model.kill)}</b>${status(modelKillHit,'避开成功','杀组出现')}</div>
+          <div><span>${esc(modelDoubleLabel)}</span><b>${(sequenceMode?model.recommends:model.doubleGroups).map(esc).join(' / ')||'—'}</b>${status(modelDoubleHit)}</div>
+          <div><span>${esc(modelThreeLabel)}</span><b>${(sequenceMode?model.mainCandidates:model.threeDoor).map(esc).join(' / ')||'—'}</b>${status(modelThreeHit,'覆盖','未覆盖')}</div>
+          <div><span>${esc(modelCodesLabel)}</span><b>${goblinSums}</b>${status(!!modelCodesHit,'四码命中','四码未中')}</div>
         </div>
-        <small class="latest-forecast-detail-note">预测仅使用该期开奖前的历史数据；回测结果不代表下一期保证。</small>
+        <small class="latest-forecast-detail-note">预测仅使用该期开奖前的历史数据；每项分别核验，回测结果不代表下一期保证。</small>
       </section>
       <div class="forecast-reference-line"><b>组合参考</b><span class="forecast-reference-item">三组：${comboThreeText} ${status(r.comboThreeHit,'中','未中')}</span><span class="forecast-reference-item">三门：${threeDoorText} ${status(r.threeHit,'中','未中')}</span></div>
     </article>`;
@@ -1049,16 +1168,15 @@ function forecastCard(r,compact=false){
       <div class="forecast-prediction-cell"><span class="forecast-cell-label">KA28 二门组合</span><div class="forecast-combo-values">${r.comboTwo.map(g=>`<span class="round-combo">${esc(g)}</span>`).join('')}</div>${hitBadge(r.comboHit,'命中','未中')}</div>
       <div class="forecast-prediction-cell"><span class="forecast-cell-label">KA28 融合和值四码</span><div class="forecast-sum-values">${sumPills}</div>${hitBadge(r.sumHit,'命中','未中')}</div>
     </div>
-    <section class="forecast-goblin-record" aria-label="哥布林·星轨算法真实开奖回测">
-      <div class="forecast-goblin-head"><b>🐲 哥布林·星轨算法</b><span>输入：第 ${esc(r.goblin.inputIssue)} 期 · 预测：第 ${esc(r.id)} 期</span></div>
+    <section class="forecast-goblin-record" aria-label="${esc(modelTitle)}真实开奖回测">
+      <div class="forecast-goblin-head"><b>${esc(modelTitle)}</b><span>输入：第 ${esc(sequenceMode?model.inputIssue:model.inputIssue)} 期 · 预测：第 ${esc(r.id)} 期</span></div>
       <div class="forecast-goblin-grid">
-        <div class="forecast-goblin-cell"><small>星轨杀号组</small><b class="goblin-kill-text">${esc(r.goblin.kill)}</b>${hitBadge(r.goblinKillHit,'杀中','未杀中')}</div>
-        <div class="forecast-goblin-cell"><small>星轨双组</small><b>${r.goblin.doubleGroups.map(esc).join(' / ')}</b>${hitBadge(r.goblinDoubleHit,'命中','未中')}</div>
-        <div class="forecast-goblin-cell"><small>星轨三门</small><b>${r.goblin.threeDoor.map(esc).join(' / ')}</b>${hitBadge(r.goblinThreeDoorHit,'覆盖','未覆盖')}</div>
-        <div class="forecast-goblin-cell"><small>星轨和值四码</small><div class="forecast-sum-values">${(r.goblinSums||[]).map(n=>`<span class="forecast-sum-pill">${n}</span>`).join('')}</div>${hitBadge(!!r.goblinSumHit,'四码命中','四码未中')}</div>
+        <div class="forecast-goblin-cell"><small>${esc(modelKillLabel)}</small><b class="goblin-kill-text">${esc(model.kill)}</b>${hitBadge(modelKillHit,'杀中','未杀中')}</div>
+        <div class="forecast-goblin-cell"><small>${esc(modelDoubleLabel)}</small><b>${(sequenceMode?model.recommends:model.doubleGroups).map(esc).join(' / ')}</b>${hitBadge(modelDoubleHit,'命中','未中')}</div>
+        <div class="forecast-goblin-cell"><small>${esc(modelThreeLabel)}</small><b>${(sequenceMode?model.mainCandidates:model.threeDoor).map(esc).join(' / ')}</b>${hitBadge(modelThreeHit,'覆盖','未覆盖')}</div>
+        <div class="forecast-goblin-cell"><small>${esc(modelCodesLabel)}</small><div class="forecast-sum-values">${modelCodes.map(n=>`<span class="forecast-sum-pill">${esc(n)}</span>`).join('')}</div>${hitBadge(!!modelCodesHit,'候选命中','候选未中')}</div>
       </div>
-      ${r.goblinSpecial?'<small class="forecast-goblin-note">本期真实和值为 13/14，按原版哥布林特殊保护规则计杀号/双组命中。</small>':''}
-      <small class="forecast-goblin-note">星轨四码只依据第 ${esc(r.goblin.inputIssue)} 期及之前可用历史生成；属于星轨分组映射后的扩展和值候选。</small>
+      <small class="forecast-goblin-note">候选只依据第 ${esc(model.inputIssue)} 期及之前可用历史生成；每项按真实开奖分别核验，不使用目标期数据生成预测。</small>
     </section>
     ${compact?'':`<div class="forecast-reference-line"><b>组合参考</b><span class="forecast-reference-item">三组：${r.comboThree.map(esc).join(' / ')||'—'} ${hitBadge(r.comboThreeHit,'中','未中')}</span><span class="forecast-reference-item">三门：${r.threeGroups.length?r.threeGroups.map(esc).join(' / '):'样本不足'} ${hitBadge(r.threeHit,'中','未中')}</span><small>开奖来自 API；预测只使用当期开奖之前可用的数据。</small></div>`}
   </article>`;
@@ -1066,7 +1184,12 @@ function forecastCard(r,compact=false){
 function forecastStatsGrid(rows){
   const sample=Array.isArray(rows)?rows:[];
   const count=sample.length;
-  const metrics=[['KA28 杀组',r=>r.killHit],['KA28 二门',r=>r.comboHit],['KA28 三组',r=>r.comboThreeHit],['KA28 融合四码',r=>r.sumHit],['星轨四码',r=>r.goblinSumHit],['哥布林杀组',r=>r.goblinKillHit],['星轨双组',r=>r.goblinDoubleHit],['星轨三门',r=>r.goblinThreeDoorHit]];
+  const sequenceMode=activeForecastAlgorithm==='sequence';
+  const metrics=[['KA28 杀组',r=>r.killHit],['KA28 二门',r=>r.comboHit],['KA28 三组',r=>r.comboThreeHit],['KA28 融合四码',r=>r.sumHit],
+    [sequenceMode?'星序特码':'星轨四码',r=>sequenceMode?r.sequenceCodeHit:r.goblinSumHit],
+    [sequenceMode?'五方星序杀组':'哥布林杀组',r=>sequenceMode?r.sequenceKillHit:r.goblinKillHit],
+    [sequenceMode?'序列双组':'星轨双组',r=>sequenceMode?r.sequenceDoubleHit:r.goblinDoubleHit],
+    [sequenceMode?'主候选三门':'星轨三门',r=>sequenceMode?r.sequenceThreeDoorHit:r.goblinThreeDoorHit]];
   return `<div class="forecast-stats-grid">${metrics.map(([name,fn])=>{const hit=sample.filter(fn).length;return `<div class="forecast-stat"><span>${name}命中</span><b>${hit}/${count||0}</b><small>${count?(hit/count*100).toFixed(1)+'%':'—'}</small></div>`}).join('')}</div>`;
 }
 function forecastStats(rows){
@@ -1123,15 +1246,15 @@ function renderAnalytics(force=false){
   const signature=[windowN(),rangeBacktestPeriod,$('#forecastCountSelect')?.value||20,hist.map(r=>`${r.id}:${r.sum}:${r.digits.join('')}`).join(';')].join('|');
   if(!force&&signature===analyticsRenderSignature)return;
   analyticsRenderSignature=signature;
-  renderPrediction(hist);renderKillPrediction(hist);renderGoblinPrediction(hist);renderGoblinFourAndCompare(hist);renderOmissions(hist);renderRecent(hist);renderForecastRounds();
+  renderPrediction(hist);renderKillPrediction(hist);renderGoblinPrediction(hist);renderSequencePrediction(hist);renderGoblinFourAndCompare(hist);renderOmissions(hist);renderRecent(hist);renderForecastRounds();
 }
 function renderTick(){renderCountdown()}
-async function boot(){const savedTheme=safeGet('ka28.lab.theme')||'light';setTheme(savedTheme);restoreCache();if(state.records.length){state.latest=state.records[state.records.length-1];renderDraw();renderAnalytics();setStatus('显示缓存数据 · 正在联网校准','warn')}const tasks=await Promise.allSettled([fetchLatest({silent:true}),fetchHistory({quiet:true})]);if(!state.latest&&state.records.length)state.latest=state.records[state.records.length-1];renderDraw();renderAnalytics();renderCountdown();
+async function boot(){setDataReady(false);initAlgorithmSwipe();setActiveForecastAlgorithm('goblin',false);const savedTheme=safeGet('ka28.lab.theme')||'light';setTheme(savedTheme);restoreCache();if(state.records.length){state.latest=state.records[state.records.length-1];renderDraw();renderAnalytics();setDataReady(true);setStatus('显示缓存数据 · 正在联网校准','warn')}const tasks=await Promise.allSettled([fetchLatest({silent:true}),fetchHistory({quiet:true})]);if(!state.latest&&state.records.length)state.latest=state.records[state.records.length-1];renderDraw();renderAnalytics();renderCountdown();setDataReady(true);
   setInterval(()=>{if(!document.hidden)renderTick()},1000);
   setInterval(()=>{if(!document.hidden)fetchLatest({silent:true})},3000);
   setInterval(()=>{if(!document.hidden&&(!state.historyLoaded||state.records.length<30||state.historyError))fetchHistory({quiet:true})},30000);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)return;renderCountdown();fetchLatest({silent:true});if(!state.historyLoaded||state.records.length<30||state.historyError)fetchHistory({quiet:true})});
-  $('#refreshBtn').addEventListener('click',async()=>{const btn=$('#refreshBtn');btn.classList.add('is-syncing');try{await fetchLatest();await fetchHistory({quiet:true});renderAnalytics(true)}finally{setTimeout(()=>btn.classList.remove('is-syncing'),180)}});$('#windowSelect').addEventListener('change',()=>{killModelCacheKey='';renderAnalytics()});$('#algoLeaderboard').addEventListener('click',e=>{const row=e.target.closest('button[data-algo-id]');if(!row)return;const id=row.dataset.algoId;selectedAlgoIds.clear();selectedAlgoIds.add(id);document.querySelectorAll('#algoLeaderboard [data-algo-id]').forEach(item=>{const active=item.dataset.algoId===id;item.classList.toggle('is-active',active);item.setAttribute('aria-pressed',String(active))});renderAlgoSheet()});$('#algoSheetBody').addEventListener('change',e=>{if(e.target.id==='sheetRangeBacktest')applyRangeTuning(false)});$('#algoSheetBody').addEventListener('click',e=>{if(e.target.closest('#sheetAutoRangeBtn'))applyRangeTuning(true)});$('#closeAlgoSheet').addEventListener('click',()=>closeAlgoSheet(true));$('#clearAlgoSelection').addEventListener('click',()=>closeAlgoSheet(true));$('#algoSheetBackdrop').addEventListener('click',()=>closeAlgoSheet(true));$('#recentRecordsOpenBtn').addEventListener('click',()=>renderRecentSheet(true));$('#forecastMoreBtn').addEventListener('click',openForecastHistory);$('#forecastCountSelect').addEventListener('change',()=>{rollingForecastCacheKey='';renderForecastRounds()});$('#drawHistoryCountSelect').addEventListener('change',()=>renderRecent(currentRecords()));const sheetDragTargets=[$('.sheet-grabber'),$('.sheet-head')].filter(Boolean);
+  $('#refreshBtn').addEventListener('click',async()=>{const btn=$('#refreshBtn');btn.classList.add('is-syncing');try{await fetchLatest();await fetchHistory({quiet:true});renderAnalytics(true)}finally{setTimeout(()=>btn.classList.remove('is-syncing'),180)}});$('#windowSelect').addEventListener('change',()=>{killModelCacheKey='';renderAnalytics()});$('#algoRankToggle').addEventListener('click',()=>{algoRankExpanded=!algoRankExpanded;const hist=currentRecords().slice(-windowN());renderAlgoLeaderboard(hist,sourceVoteModel(hist));if(!algoRankExpanded)$('#algoRankTitle')?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})});$('#algoLeaderboard').addEventListener('click',e=>{const row=e.target.closest('button[data-algo-id]');if(!row)return;const id=row.dataset.algoId;selectedAlgoIds.clear();selectedAlgoIds.add(id);document.querySelectorAll('#algoLeaderboard [data-algo-id]').forEach(item=>{const active=item.dataset.algoId===id;item.classList.toggle('is-active',active);item.setAttribute('aria-pressed',String(active))});renderAlgoSheet()});$('#algoSheetBody').addEventListener('change',e=>{if(e.target.id==='sheetRangeBacktest')applyRangeTuning(false)});$('#algoSheetBody').addEventListener('click',e=>{if(e.target.closest('#sheetAutoRangeBtn'))applyRangeTuning(true)});$('#closeAlgoSheet').addEventListener('click',()=>closeAlgoSheet(true));$('#clearAlgoSelection').addEventListener('click',()=>closeAlgoSheet(true));$('#algoSheetBackdrop').addEventListener('click',()=>closeAlgoSheet(true));$('#recentRecordsOpenBtn').addEventListener('click',()=>renderRecentSheet(true));$('#forecastMoreBtn').addEventListener('click',openForecastHistory);$('#forecastCountSelect').addEventListener('change',()=>{rollingForecastCacheKey='';renderForecastRounds()});$('#drawHistoryCountSelect').addEventListener('change',()=>renderRecent(currentRecords()));const sheetDragTargets=[$('.sheet-grabber'),$('.sheet-head')].filter(Boolean);
 let sheetDrag=null,sheetDragFrame=0;
 const getSheetSnapPoints=()=>{
   const viewport=window.visualViewport?.height||window.innerHeight;
@@ -1191,6 +1314,6 @@ sheetDragTargets.forEach(target=>{
   target.addEventListener('pointerup',e=>endSheetDrag(e,false));
   target.addEventListener('pointercancel',e=>endSheetDrag(e,true));
   target.addEventListener('lostpointercapture',e=>{if(sheetDrag&&e.pointerId===sheetDrag.pointerId)endSheetDrag(e,true)});
-});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#algoSheet').hidden)closeAlgoSheet(true)});$('#themeBtn').addEventListener('click',toggleThemeFromButton);$('#soundBtn').addEventListener('click',()=>{soundEnabled=!soundEnabled;$('#soundBtn').setAttribute('aria-pressed',String(soundEnabled));$('#soundBtn').textContent=soundEnabled?'🔔 提示音：开':'🔔 提示音：关';if(soundEnabled){playTripleChime();toast('已开启叮叮叮开奖提示音')}else toast('提示音已关闭')});$('#scratchBtn').addEventListener('click',()=>scratchEnabled?closeScratch():openScratch());const canvas=$('#scratchCanvas');canvas.addEventListener('pointerdown',e=>{if(!scratchEnabled)return;canvas.setPointerCapture?.(e.pointerId);scratchLastPoint=null;eraseScratch(e)});canvas.addEventListener('pointermove',e=>{if(!scratchEnabled||!e.buttons)return;eraseScratch(e)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>canvas.addEventListener(ev,()=>{scratchLastPoint=null}));let scratchResizeFrame=0;window.addEventListener('resize',()=>{if(!scratchEnabled||scratchResizeFrame)return;scratchResizeFrame=requestAnimationFrame(()=>{scratchResizeFrame=0;if(scratchEnabled)sizeScratchCanvas()})});}
+});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#algoSheet').hidden)closeAlgoSheet(true)});$('#themeBtn').addEventListener('click',toggleThemeFromButton);$('#soundBtn').addEventListener('click',()=>{soundEnabled=!soundEnabled;$('#soundBtn').setAttribute('aria-pressed',String(soundEnabled));$('#soundBtn').textContent=soundEnabled?'🔔 强提示音：开':'🔔 强提示音：关';if(soundEnabled){playTripleChime();toast('已开启高音量叮叮叮提示音')}else toast('提示音已关闭')});$('#scratchBtn').addEventListener('click',()=>scratchEnabled?closeScratch():openScratch());const canvas=$('#scratchCanvas');canvas.addEventListener('pointerdown',e=>{if(!scratchEnabled)return;canvas.setPointerCapture?.(e.pointerId);scratchLastPoint=null;eraseScratch(e)});canvas.addEventListener('pointermove',e=>{if(!scratchEnabled||!e.buttons)return;eraseScratch(e)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>canvas.addEventListener(ev,()=>{scratchLastPoint=null}));let scratchResizeFrame=0;window.addEventListener('resize',()=>{if(!scratchEnabled||scratchResizeFrame)return;scratchResizeFrame=requestAnimationFrame(()=>{scratchResizeFrame=0;if(scratchEnabled)sizeScratchCanvas()})});}
 window.__KA28_START_AFTER_AUTH=boot;
 })();

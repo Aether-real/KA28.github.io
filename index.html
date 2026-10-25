@@ -8,12 +8,12 @@
 <title>KA28开奖网 · 预测实验室</title>
 <link crossorigin="" href="https://pc28.world" rel="preconnect"/>
 <link crossorigin="" href="https://my.b6w.cn" rel="preconnect"/>
-<link href="./css/layout-compat.css?v=20261025-sum-grid-alignment8" rel="stylesheet"/>
-<link href="./css/styles.css?v=20261025-sum-grid-alignment8" rel="stylesheet"/>
-<link href="./css/experience.css?v=20261025-sum-grid-alignment8" rel="stylesheet"/>
-<script defer="" src="./js/loader.js?v=20261025-sum-grid-alignment8"></script>
+<link href="./css/layout-compat.css?v=20261026-status-top3-expand3" rel="stylesheet"/>
+<link href="./css/styles.css?v=20261026-status-top3-expand3" rel="stylesheet"/>
+<link href="./css/experience.css?v=20261026-status-top3-expand3" rel="stylesheet"/>
+<script defer="" src="./js/loader.js?v=20261026-status-top3-expand3"></script>
 </head>
-<body class="ka28-redesign">
+<body class="ka28-redesign" data-data-ready="false">
 <div aria-live="polite" class="ka28-boot-notice" id="ka28BootNotice" role="status">正在加载 KA28 组件…</div>
 <!-- MIYAN_GATE_V2_INTEGRATION: login gate -->
 <div aria-labelledby="miYanTitle" aria-modal="true" id="miYanGate" role="dialog">
@@ -55,10 +55,8 @@
   <header class="top fade" style="--d:0ms">
 <div class="brand"><div class="brand-icon" aria-hidden="true">28</div><div class="brand-copy"><div class="eyebrow">KA28 · SIGNAL LAB</div><h1>KA28开奖网</h1><small>实时开奖 · 统计模型 · 候选和值</small></div></div>
 <div class="top-tools" aria-label="页面操作">
+<div class="top-status"><div aria-label="API 状态：正在连接开奖 API…" aria-live="polite" class="status status-compact" role="status" title="正在连接开奖 API…"><i class="dot" id="statusDot"></i><span class="status-text" id="statusText" title="正在连接开奖 API…">连接中</span></div></div>
 <button aria-label="查看网站公告与更新" class="btn secondary mini top-announcement-btn" id="announcementBtn" title="公告与更新" type="button"><svg class="toolbar-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 21h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span class="top-announcement-label">公告</span></button>
-<button aria-label="切换到暗色主题" aria-pressed="false" class="btn secondary mini top-theme-btn" id="themeBtn" title="切换亮色/暗色主题" type="button"><svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M20.5 15.1A8.6 8.6 0 0 1 8.9 3.5 8.8 8.8 0 1 0 20.5 15.1Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-<button aria-label="同步最新开奖数据" class="btn secondary mini top-sync-btn" id="refreshBtn" title="立即同步开奖数据" type="button"><svg class="sync-icon toolbar-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M20 7v5h-5M4 17v-5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.6 9A7 7 0 0 1 17.4 6.4L20 12M4 12l2.6 5.6A7 7 0 0 0 18.4 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="top-sync-full">同步</span></button>
-<div aria-label="API 状态：正在连接开奖 API…" aria-live="polite" class="status status-compact" role="status" title="正在连接开奖 API…"><i class="dot" id="statusDot"></i><span class="status-text" id="statusText" title="正在连接开奖 API…">连接中</span></div>
 </div>
 </header>
   <section aria-label="开奖时间与倒计时" class="hero hero-time-header fade" style="--d:80ms">
@@ -68,18 +66,18 @@
 </div>
 <div class="countdown hero-countdown"><span>距离下期开奖</span><strong id="countdownText">--:--</strong><small id="countdownHint">等待 API 下期开奖时间</small></div>
 </section>
-  <section class="glass draw-card fade" id="drawSection" style="--d:140ms">
-<div class="draw-head"><div class="draw-head-left"><div class="draw-head-titles"><div class="draw-title-row"><h3>最新开奖</h3><span class="tag" id="drawStatus"><i class="dot"></i>等待数据</span></div><p>开奖号码与开奖时间来自真实 API</p></div></div><div class="draw-actions"><button aria-pressed="false" class="btn secondary mini" id="soundBtn">🔔 提示音：关</button><button class="btn secondary mini" id="scratchBtn">咪牌</button></div></div>
+  <section aria-busy="true" class="glass draw-card fade" data-skeleton-region id="drawSection" style="--d:140ms">
+<div class="draw-head"><div class="draw-head-left"><div class="draw-head-titles"><div class="draw-title-row"><h3>最新开奖</h3><button aria-label="同步最新开奖数据" class="btn secondary mini draw-sync-btn top-sync-btn" id="refreshBtn" title="立即同步开奖数据" type="button"><svg class="sync-icon toolbar-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M20 7v5h-5M4 17v-5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.6 9A7 7 0 0 1 17.4 6.4L20 12M4 12l2.6 5.6A7 7 0 0 0 18.4 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="top-sync-full">API 同步</span></button><span class="tag" id="drawStatus"><i class="dot"></i>等待数据</span></div><p>开奖号码与开奖时间来自真实 API</p></div></div><div class="draw-actions"><button aria-pressed="false" class="btn secondary mini" id="soundBtn">🔔 强提示音：关</button><button class="btn secondary mini" id="scratchBtn">咪牌</button></div></div>
 <div class="scratch-zone" id="scratchZone">
 <div class="period">第 <b id="periodNo">—</b> 期 <span id="drawTimeInline" style="color:var(--muted);margin-left:7px">等待开奖数据</span></div>
 <div class="scratch-surface" id="scratchSurface"><div aria-live="polite" class="balls" id="drawBalls"><span class="ball">—</span><span class="op">+</span><span class="ball b2">—</span><span class="op">+</span><span class="ball b3">—</span><span class="op">=</span><span class="ball sum">—</span></div><canvas aria-label="刮开查看开奖数字与和值" class="scratch-canvas" id="scratchCanvas"></canvas></div>
 <div class="draw-meta"><span id="drawCombo">大小单双：—</span><span id="drawShape">开奖形态：—</span></div>
-<div class="chips" id="drawTags"></div>
+<div aria-busy="true" class="chips" data-skeleton-region id="drawTags"><span aria-hidden="true" class="chip skeleton-placeholder"></span><span aria-hidden="true" class="chip skeleton-placeholder"></span><span aria-hidden="true" class="chip skeleton-placeholder"></span><span aria-hidden="true" class="chip skeleton-placeholder"></span><span aria-hidden="true" class="chip skeleton-placeholder"></span></div>
 </div>
 <div class="keno"><div class="keno-head"><strong>原始 Keno 20 球</strong><span class="tag" id="kenoState">等待 API 返回</span></div><div class="keno-grid" id="kenoGrid"><div class="tag" style="grid-column:1/-1;justify-content:center">等待真实 Keno 数据</div></div></div>
 <div class="meta-grid"><div class="meta-item"><span>开奖时间</span><strong id="metaDrawTime">—</strong></div><div class="meta-item"><span>开奖号码校验</span><strong id="metaValidate">—</strong></div><div class="meta-item"><span>下期开奖时间</span><strong id="metaNextTime">—</strong></div><div class="meta-item"><span>更新时间</span><strong id="metaUpdated">—</strong></div></div>
 </section>
-  <section class="glass panel fade" id="predictionSection" style="--d:200ms">
+  <section aria-busy="true" class="glass panel fade" data-skeleton-region id="predictionSection" style="--d:200ms">
 <div class="panel-head prediction-head">
 <div class="prediction-heading"><div class="window-kicker">预测参数 · LOOKBACK WINDOW</div><h3>下一期预测策略</h3><p>小模块分组展示当前候选；切换窗口会同步更新模型与回测样本。</p></div>
 <div class="window-control"><label for="windowSelect">预测历史窗口</label><select aria-label="选择预测历史窗口" class="select" id="windowSelect"><option value="20">最近 20 期 · 短期</option><option selected="" value="50">最近 50 期 · 均衡</option><option value="100">最近 100 期 · 中期</option><option value="200">最近 200 期 · 长期</option></select><small class="window-summary" id="windowSummary">当前设置：最近 50 期 · 正在等待历史数据</small></div>
@@ -103,8 +101,16 @@
 <div class="disclaimer" id="sumFourNote">和值模型使用历史样本评分；候选仅作统计参考，不代表未来开奖结果。</div>
 </div></div>
 </div>
-<div class="prediction-step prediction-step-three"><div class="subhead"><span><b class="step-label">03</b> 三组组合</span><span class="tag">其余全部三组</span></div><div class="combo-three" id="comboThree"><span class="tag">等待算法计算</span></div><div class="three-door-box"><div class="subhead"><span>分享算法 · 三门参考</span><span class="tag" id="threeDoorRange">区间待选</span></div><div class="combo-three" id="threeDoorGroups"><span class="tag">等待历史数据</span></div><small id="threeDoorInfo">根据上传算法中的种子、区间和三门规则进行滚动选参；回测仅作历史参考。</small></div><div class="vote-distribution-panel" aria-label="四组综合投票权重"><div class="vote-distribution-head"><div><strong>四组投票分布</strong><small>按当前模型综合权重排序</small></div><span class="tag">相对权重</span></div><div class="vote-bars" id="killVoteBars" role="group" aria-label="四种大小单双组合的综合投票权重"><div class="vote-empty">等待有效历史样本</div></div></div></div>
-<div class="goblin-panel glass-inset" id="goblinPanel">
+<div class="prediction-step prediction-step-three"><div class="subhead"><span><b class="step-label">03</b> 三组组合</span><span class="tag">其余全部三组</span></div><div class="combo-three" id="comboThree"><span class="tag">等待算法计算</span></div><div class="three-door-box"><div class="subhead"><span>分享算法 · 三门参考</span><span class="tag" id="threeDoorRange">区间待选</span></div><div class="combo-three" id="threeDoorGroups"><span class="tag">等待历史数据</span></div><small id="threeDoorInfo">根据种子、区间和三门规则进行滚动选参；回测仅作历史参考。</small></div><div class="vote-distribution-panel" aria-label="四组综合投票权重"><div class="vote-distribution-head"><div><strong>四组投票分布</strong><small>按当前模型综合权重排序</small></div><span class="tag">相对权重</span></div><div class="vote-bars" id="killVoteBars" role="group" aria-label="四种大小单双组合的综合投票权重"><div class="vote-empty">等待有效历史样本</div></div></div></div>
+<div class="goblin-panel glass-inset" id="goblinPanel" data-active-algo="goblin" aria-label="左右滑动切换预测算法">
+<div class="algo-swipe-toolbar">
+  <div class="algo-swipe-mode" aria-live="polite"><span class="algo-mode-dot" id="algoModeDot"></span><b id="algoModeLabel">1 / 2 · 哥布林星轨算法</b></div>
+  <div class="algo-swipe-controls"><button type="button" id="algoPrevBtn" class="algo-swipe-btn" aria-label="切换回哥布林星轨算法" title="上一个算法">‹</button><button type="button" id="algoNextBtn" class="algo-swipe-btn" aria-label="切换到五方星序差集算法" title="下一个算法">›</button></div>
+</div>
+<div class="algo-swipe-viewport" id="algoSwipeViewport">
+  <div class="algo-swipe-track" id="algoSwipeTrack">
+    <div class="algo-swipe-slide" id="goblinSlide" aria-label="哥布林星轨算法">
+
 <div class="section-title"><div><span class="step-label">05</span><h4>🐲 哥布林·星轨算法</h4><p>星轨算法沿用原版哥布林逻辑，结合 KA28 历史窗口展示四码、杀号组、三门与双组参考。</p></div><span class="tag" id="goblinStatus">等待历史数据</span></div>
 <div class="subhead" style="margin-top:12px"><span>星轨四码参考</span><span class="tag">和值 0–27 · 当前下一期</span></div>
 <div aria-label="星轨算法和值四码" class="sum-four-grid goblin-four-grid" id="goblinFourCodes">
@@ -121,14 +127,41 @@
 <div class="subhead" style="margin-top:14px"><span>双组参考</span><span class="tag" id="goblinPeriod">—</span></div>
 <div class="combo-two" id="goblinBets"><span class="tag">等待历史数据</span></div>
 <small class="step-help" id="goblinExplain">算法仅为历史统计实验，不代表未来开奖结果或命中保证。</small>
+    </div>
+    <div class="algo-swipe-slide sequence-algo-slide" id="sequenceSlide" aria-label="五方星序差集算法">
+      <div class="section-title"><div><span class="step-label">05B</span><h4>🧭 五方星序差集算法</h4><p>由五方位分组、主副候选差集与特码筛选构成；保留源算法计算路线，使用统一历史回测。</p></div><span class="tag" id="sequenceStatus">等待历史数据</span></div>
+      <div class="subhead" style="margin-top:12px"><span>序列特码参考</span><span class="tag">0–27 · 当前下一期</span></div>
+      <div aria-label="五方星序算法特码候选" class="sum-four-grid goblin-four-grid" id="sequenceCodes">
+        <div class="sum-four-card"><span class="sum-four-kicker">序列 01</span><strong>—</strong><small>等待历史数据</small></div>
+        <div class="sum-four-card"><span class="sum-four-kicker">序列 02</span><strong>—</strong><small>等待历史数据</small></div>
+        <div class="sum-four-card"><span class="sum-four-kicker">序列 03</span><strong>—</strong><small>等待历史数据</small></div>
+        <div class="sum-four-card"><span class="sum-four-kicker">序列 04</span><strong>—</strong><small>等待历史数据</small></div>
+      </div>
+      <small class="step-help" id="sequenceCodesNote">候选四码基于主随机数与双组范围筛选；样本不足时不生成虚构结果。</small>
+      <div class="kill-result-grid">
+        <div class="kill-result"><span>序列杀号组</span><strong id="sequenceKill">—</strong><small id="sequenceKillNote">等待有效开奖</small></div>
+        <div class="kill-result alt"><span>主三门池</span><strong id="sequencePool">—</strong><small id="sequencePoolNote">由主候选规则生成</small></div>
+      </div>
+      <div class="subhead" style="margin-top:14px"><span>双组参考</span><span class="tag" id="sequencePeriod">—</span></div>
+      <div class="combo-two" id="sequenceBets"><span class="tag">等待历史数据</span></div>
+      <details class="sequence-calc-details"><summary>查看序列计算摘要</summary><pre id="sequenceSteps">等待有效开奖数据</pre></details>
+      <small class="step-help" id="sequenceExplain">该算法只按开奖前已有历史生成候选，历史统计不代表未来开奖结果，也不保证命中。</small>
+    </div>
+  </div>
+</div>
+<div class="algo-swipe-footer"><span id="algoSwipeHint">← 左滑查看五方星序差集算法</span><span class="algo-swipe-dots" aria-label="当前算法页"><i class="is-active" id="algoDotGoblin"></i><i id="algoDotSequence"></i></span><span>右滑返回 →</span></div>
 </div>
 </div>
 
 </section>
   <section aria-labelledby="algoRankTitle" class="algo-rank-panel">
-<div class="panel-head"><div><h3 id="algoRankTitle">算法排行榜 · Top 3</h3><p>按当前历史窗口逐期回测的杀组避开率排序；展示测试样本，点击条目查看算法详情。</p></div><span class="tag" id="algoRankWindow">最近 50 期</span></div>
+<div class="panel-head"><div><h3 id="algoRankTitle">49 个公式排行榜</h3><p>49 个可回测公式按当前历史窗口的杀组避开率完整排序；点击任一条目查看公式、杀组、二门、三门、和值候选与真实回测样本。</p></div><span class="tag" id="algoRankWindow">最近 50 期</span></div>
 <div aria-hidden="true" class="algo-leader-columns"><span>排名</span><span>算法 / 回测样本</span><span>历史命中率</span></div>
-<div class="algo-leader-list" id="algoLeaderboard"><div class="tag">等待历史样本计算排行</div></div>
+<div aria-busy="true" class="algo-leader-list" data-skeleton-region id="algoLeaderboard"><div class="tag">等待历史样本计算排行</div></div>
+<div class="algo-rank-actions" id="algoRankActions" hidden>
+  <button aria-controls="algoLeaderboard" aria-expanded="false" class="algo-rank-toggle" id="algoRankToggle" type="button">展开查看全部公式 <span aria-hidden="true">↓</span></button>
+  <span class="algo-rank-count" id="algoRankCount">默认显示排名前三</span>
+</div>
 <p class="disclaimer" id="algoRankNote">命中定义：算法预测的杀组未出现在该期实际组合中。每项同时显示测试次数，样本过少时排名波动较大。</p>
 
 </section>
@@ -139,14 +172,14 @@
 <div><div class="window-kicker">ROLLING BACKTEST</div><h3 id="hitRateOverviewTitle">历史命中率总览</h3><p id="forecastHitRateCaption">正在根据真实开奖历史生成逐期回测；样本不足时不展示虚构命中率。</p></div>
 <span class="tag" id="hitRateRangeTag">回测样本计算中</span>
 </div>
-<div class="hit-rate-overview-grid" id="forecastHitRateOverview"><div class="tag">等待真实开奖历史</div></div>
+<div aria-busy="true" class="hit-rate-overview-grid" data-skeleton-region id="forecastHitRateOverview"><div class="tag">等待真实开奖历史</div></div>
 </section>
     <section aria-labelledby="forecastRoundsTitle" class="forecast-history-inline">
 <div class="forecast-history-head">
 <div><h4 id="forecastRoundsTitle">KA28 预测记录</h4><p>每期预测只使用开奖前历史，并与 API 实际结果逐期核对。</p></div>
 <label class="forecast-count-control" for="forecastCountSelect"><span>查看范围</span><select aria-label="选择预测记录范围" class="select" id="forecastCountSelect"><option value="5">近 5 期</option><option value="10">近 10 期</option><option selected="" value="20">近 20 期</option><option value="50">近 50 期</option></select></label>
 </div>
-<div id="forecastLatest"><div class="tag">正在根据 API 历史生成逐期预测…</div></div>
+<div aria-busy="true" data-skeleton-region id="forecastLatest"><div class="tag">正在根据 API 历史生成逐期预测…</div></div>
 <div class="forecast-more-wrap"><button aria-controls="algoSheet" aria-haspopup="dialog" class="forecast-more-btn" id="forecastMoreBtn" type="button">展开预测历史 <span aria-hidden="true" class="forecast-dropdown-chevron">↗</span></button></div>
 <p class="disclaimer" id="forecastStatsNote">统计只使用有真实开奖结果、并且预测完全基于该期开奖前历史的期次。样本不足或无结果时不计入命中率。</p>
 </section>
@@ -160,10 +193,14 @@
 </section>
   <section aria-labelledby="drawHistoryTitle" class="glass panel draw-history-panel fade" id="drawHistorySection" style="--d:300ms">
     <div class="panel-head draw-history-head"><div><h3 id="drawHistoryTitle">开奖历史</h3><p>真实 API 开奖记录，按期号从新到旧排列。</p></div><div class="draw-history-controls"><label for="drawHistoryCountSelect">显示期数</label><select aria-label="选择显示的真实开奖记录期数" class="select" id="drawHistoryCountSelect"><option value="10">最近 10 期</option><option selected="" value="20">最近 20 期</option><option value="50">最近 50 期</option><option value="100">最近 100 期</option><option value="200">最近 200 期</option></select><span class="tag" id="drawHistoryCount">等待数据</span></div></div>
-    <div aria-label="真实开奖历史表格" class="table-wrap"><table><thead><tr><th>期号</th><th>开奖时间</th><th>开奖号码</th><th>和值</th><th>组合</th><th>边数</th><th>形态</th></tr></thead><tbody id="recentRows"><tr><td colspan="7" style="text-align:center;color:var(--muted)">正在载入历史开奖…</td></tr></tbody></table></div>
+    <div aria-label="真实开奖历史表格" class="table-wrap"><table><thead><tr><th>期号</th><th>开奖时间</th><th>开奖号码</th><th>和值</th><th>组合</th><th>边数</th><th>形态</th></tr></thead><tbody aria-busy="true" data-skeleton-region id="recentRows"><tr><td colspan="7" style="text-align:center;color:var(--muted)">正在载入历史开奖…</td></tr></tbody></table></div>
   </section>
   <footer class="footer"><span>KA28开奖网 · @Kaelan制作</span><span>数据来源：<a href="https://pc28.world/apidoc" rel="noopener" target="_blank">pc28.world API 文档</a> · 只供统计研究，不构成投注建议。</span></footer>
 </div>
+<!-- 悬浮主题球：固定在视口右下角，不占用顶栏操作空间。 -->
+<button aria-label="切换到暗色主题" aria-pressed="false" class="theme-orb" id="themeBtn" title="切换亮色/暗色主题" type="button">
+<svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M20.5 15.1A8.6 8.6 0 0 1 8.9 3.5 8.8 8.8 0 1 0 20.5 15.1Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
 <div class="algo-sheet-backdrop" hidden="" id="algoSheetBackdrop"></div>
 <section aria-labelledby="algoSheetTitle" aria-modal="true" class="algo-sheet" hidden="" id="algoSheet" role="dialog">
 <div aria-hidden="true" class="sheet-grabber"></div>

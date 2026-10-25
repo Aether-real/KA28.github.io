@@ -1,7 +1,7 @@
 /* Load crypto dependencies with CDN failover; then load local app code in strict order. */
 (function () {
   'use strict';
-  var VERSION = '20261025-toolbar-fill-polish6';
+  var VERSION = '20261026-status-top3-expand3';
   var notice = document.getElementById('ka28BootNotice');
   function hideNotice() { if (notice) notice.classList.add('is-hidden'); }
   function loadScript(url, timeoutMs) {
@@ -59,7 +59,7 @@
       console.error('[KA28 loader] Local application asset failed to load.', err);
       if (notice) {
         notice.classList.remove('is-hidden');
-        notice.textContent = '页面组件加载失败，请确认 js/ 文件夹已完整上传到 GitHub。';
+        notice.textContent = '页面组件加载失败，请检查页面资源后重新加载。';
         notice.style.color = '#ff91a6';
       }
     }
