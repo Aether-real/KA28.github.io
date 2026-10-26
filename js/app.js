@@ -444,7 +444,13 @@ function cacheKeno(id,nums){
   const keys=Object.keys(cache);for(const k of keys.slice(0,Math.max(0,keys.length-250)))delete cache[k];
   safeSet(STORAGE.keno,JSON.stringify(cache));
 }
-function parseDraw(d){if(!d||typeof d!=='object')return null;const digits=[Number(d.n1),Number(d.n2),Number(d.n3)];if(!digits.every(n=>Number.isInteger(n)&&n>=0&&n<=9))return null;const sum=digits.reduce((a,b)=>a+b,0);const id=String(d.nbr??d.id??'');if(!id)return null;let keno=validKeno(d.keno??d.keno20??d.keno_numbers??d.kenoNumbers??d.original_keno??d.originalKeno??d.numbers20);const cache=readKenoCache();if(keno.length===20)cacheKeno(id,keno);else if(cache[id])keno=validKeno(cache[id]);return {id,digits,sum,time:String(d.time||''),opentime:d.opentime??d.open_time??d.timestamp??null,combo:String(d.combo||comboOf(sum)),shape:String(d.shape||shapeOf(digits)),dragon:String(d.dragon||dragonOf(digits)),edge:String(d.pos||edgeOf(sum)),extreme:String(d.extreme||extremeOf(sum)),keno,source:'API'} }
+const VALID_COMBOS=new Set(['大单','大双','小单','小双']);
+const VALID_SHAPES=new Set(['豹子','对子','顺子','杂六']);
+const VALID_DRAGONS=new Set(['龙','虎','和']);
+const VALID_EDGES=new Set(['小边','中边','大边']);
+const VALID_EXTREMES=new Set(['极小','普通','极大']);
+function categoryOr(value,allowed,fallback){const text=String(value??'');return allowed.has(text)?text:fallback}
+function parseDraw(d){if(!d||typeof d!=='object')return null;const digits=[Number(d.n1),Number(d.n2),Number(d.n3)];if(!digits.every(n=>Number.isInteger(n)&&n>=0&&n<=9))return null;const sum=digits.reduce((a,b)=>a+b,0);const id=String(d.nbr??d.id??'');if(!id)return null;let keno=validKeno(d.keno??d.keno20??d.keno_numbers??d.kenoNumbers??d.original_keno??d.originalKeno??d.numbers20);const cache=readKenoCache();if(keno.length===20)cacheKeno(id,keno);else if(cache[id])keno=validKeno(cache[id]);return {id,digits,sum,time:String(d.time||''),opentime:d.opentime??d.open_time??d.timestamp??null,combo:categoryOr(d.combo,VALID_COMBOS,comboOf(sum)),shape:categoryOr(d.shape,VALID_SHAPES,shapeOf(digits)),dragon:categoryOr(d.dragon,VALID_DRAGONS,dragonOf(digits)),edge:categoryOr(d.pos??d.edge,VALID_EDGES,edgeOf(sum)),extreme:categoryOr(d.extreme,VALID_EXTREMES,extremeOf(sum)),keno,source:'API'} }
 function normalizeTime(t){if(!t)return'—';return String(t).replace('T',' ').replace(/([+-]\d\d:\d\d|Z)$/,'').slice(0,19)}
 function sumOf(r){return r.digits.reduce((a,b)=>a+b,0)}
 function comboOf(sum){return (sum<=13?'小':'大')+(sum%2?'单':'双')}
@@ -452,9 +458,9 @@ function edgeOf(sum){return sum<=7?'小边':sum<=17?'中边':'大边'}
 function extremeOf(sum){return sum<=5?'极小':sum>=22?'极大':'普通'}
 function dragonOf(d){return d[0]>d[2]?'龙':d[0]<d[2]?'虎':'和'}
 function shapeOf(d){const u=new Set(d).size;if(u===1)return'豹子';if(u===2)return'对子';const a=[...d].sort((x,y)=>x-y);return a[1]===a[0]+1&&a[2]===a[1]+1?'顺子':'杂六'}
-function enrich(r){r.sum=Number.isFinite(r.sum)?r.sum:sumOf(r);r.combo=r.combo||comboOf(r.sum);r.edge=r.edge||edgeOf(r.sum);r.extreme=r.extreme||extremeOf(r.sum);r.dragon=r.dragon||dragonOf(r.digits);r.shape=r.shape||shapeOf(r.digits);r.keno=validKeno(r.keno);if(r.keno.length===20)cacheKeno(r.id,r.keno);return r}
+function enrich(r){if(!r||!String(r.id??'').trim()||!Array.isArray(r.digits)||r.digits.length!==3||!r.digits.every(n=>Number.isInteger(n)&&n>=0&&n<=9))return null;r.id=String(r.id);r.sum=sumOf(r);r.combo=categoryOr(r.combo,VALID_COMBOS,comboOf(r.sum));r.edge=categoryOr(r.edge,VALID_EDGES,edgeOf(r.sum));r.extreme=categoryOr(r.extreme,VALID_EXTREMES,extremeOf(r.sum));r.dragon=categoryOr(r.dragon,VALID_DRAGONS,dragonOf(r.digits));r.shape=categoryOr(r.shape,VALID_SHAPES,shapeOf(r.digits));r.keno=validKeno(r.keno);if(r.keno.length===20)cacheKeno(r.id,r.keno);return r}
 function currentRecords(){return state.records.slice().sort((a,b)=>Number(a.id)-Number(b.id))}
-function recordStorageSignature(r){return [String(r?.id??''),String(r?.time??''),String(r?.opentime??''),(r?.digits||[]).join(','),String(r?.sum??''),validKeno(r?.keno).join(',')].join('|')}
+function recordStorageSignature(r){return [String(r?.id??''),String(r?.time??''),String(r?.opentime??''),(r?.digits||[]).join(','),String(r?.sum??''),String(r?.combo??''),String(r?.shape??''),String(r?.dragon??''),String(r?.edge??''),String(r?.extreme??''),validKeno(r?.keno).join(',')].join('|')}
 function mergeDraws(draws){
   const m=new Map(state.records.map(r=>[String(r.id),r]));
   const kcache=readKenoCache();
@@ -497,7 +503,7 @@ let toastTimer=0;function toast(msg){const e=$('#toast');e.textContent=String(ms
 async function getJSON(path,timeout=9000){const ctrl=new AbortController();const tid=setTimeout(()=>ctrl.abort(),timeout);try{const res=await fetch(API+path,{signal:ctrl.signal,headers:{Accept:'application/json'},cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);const j=await res.json();if(j?.ok===false)throw new Error(j.error?.message||'API 返回错误');return j}finally{clearTimeout(tid)}}
 function getDrawFromLatest(j){return j?.data?.draw??j?.data?.item??null}
 function setCountdown(j){const c=j?.data?.countdown;const sec=Number(c?.seconds);const at=Number(c?.next_draw_at);state.countdownSeconds=Number.isFinite(sec)&&sec>=0?sec:null;state.nextDrawAt=Number.isFinite(at)&&at>1e12?at:(state.countdownSeconds===null?null:Date.now()+state.countdownSeconds*1000)}
-function drawDataSignature(r){if(!r)return '';return [String(r.id??''),String(r.time??''),String(r.opentime??''),(r.digits||[]).join(','),String(r.sum??''),validKeno(r.keno).join(',')].join('|')}
+function drawDataSignature(r){if(!r)return '';return [String(r.id??''),String(r.time??''),String(r.opentime??''),(r.digits||[]).join(','),String(r.sum??''),String(r.combo??''),String(r.shape??''),String(r.dragon??''),String(r.edge??''),String(r.extreme??''),validKeno(r.keno).join(',')].join('|')}
 async function fetchLatest({silent=false}={}){
   if(state.loading)return;state.loading=true;
   try{
@@ -534,10 +540,11 @@ async function fetchHistory({quiet=true}={}){
     const recordsChanged=beforeRecords!==recordsRenderSignature();
     const latestChanged=beforeLatest!==drawDataSignature(latestDraw());
     if(recordsChanged||latestChanged){rollingForecastCacheKey='';analyticsRenderSignature='';renderDraw();renderAnalytics(true)}
-    setStatus('API 已同步 · '+new Date().toLocaleTimeString('zh-CN',{hour12:false}));
+    // The history endpoint succeeding must not mask a failed latest-draw request in the top status.
     return true;
   }catch(e){
     state.historyError=e.message||'history API 请求失败';state.historyLoaded=true;
+    if(!state.updatedAt)setStatus('历史 API 暂不可用 · 保留已有数据','warn');
     if(!quiet)toast('历史载入失败：'+state.historyError);
     analyticsRenderSignature='';renderAnalytics(true);return false;
   }finally{
@@ -556,7 +563,7 @@ function setDataReady(ready){
 }
 let scratchPrivacySnapshot=null,scratchRevealedForDraw=false;
 let analyticsRenderSignature="";
-function drawTags(r){const s=r.sum;const tags=[{v:s<=13?'小':'大',c:''},{v:s%2?'单':'双',c:'blue'},{v:r.combo,c:'amber'},{v:r.shape,c:'violet'},{v:'龙虎 '+r.dragon,c:'blue'},{v:'边数 '+r.edge,c:''},{v:'和值 '+s,c:'amber'}];$('#drawTags').innerHTML=tags.map(x=>`<span class="chip ${x.c}">${x.v}</span>`).join('')}
+function drawTags(r){const s=r.sum;const tags=[{v:s<=13?'小':'大',c:''},{v:s%2?'单':'双',c:'blue'},{v:r.combo,c:'amber'},{v:r.shape,c:'violet'},{v:'龙虎 '+r.dragon,c:'blue'},{v:'边数 '+r.edge,c:''},{v:'和值 '+s,c:'amber'}];$('#drawTags').innerHTML=tags.map(x=>`<span class="chip ${x.c}">${esc(x.v)}</span>`).join('')}
 function renderDraw(){
   const r=latestDraw();if(!r)return;
   const prevId=lastRenderedDrawId;
@@ -726,7 +733,7 @@ const FOUR_GROUPS=sourceAlgoPack.COMBOS;
 let killModelCacheKey='',killModelCache=null,threeDoorCacheKey='',threeDoorCache=null,rangeKillCacheKey='',rangeKillCache=null;
 let soundEnabled=false,audioContext=null,audioMasterGain=null,lastRenderedDrawId=null,scratchEnabled=false,scratchContext=null,scratchMoved=0,scratchLastPoint=null;
 let rangeBacktestPeriod=Math.max(10,Math.min(100,Number(safeGet('ka28.rangeBacktestPeriod'))||30));
-const selectedAlgoIds=new Set();let currentAlgoRankings=[];let algoRankExpanded=false;let sheetCloseTimer=0;let sheetMode='algo';
+const selectedAlgoIds=new Set();let currentAlgoRankings=[];let algoRankExpanded=false;let sheetCloseTimer=0;let sheetMode='algo';let sheetReturnFocus=null;
 function legacyHistory(hist){return hist.slice().reverse().map(r=>({expect:String(r.id),nums:r.digits.slice(),sum:r.sum,type:sourceAlgoPack.typeA(r.sum),time:r.time||'',opentime:r.opentime??r.timestamp??null}))}
 function calcOwnGroupModel(hist){
   const prior={};const theoreticalGroup={};FOUR_GROUPS.forEach(g=>{theoreticalGroup[g]=0});
@@ -808,9 +815,10 @@ function renderAlgoSheet(){
   const chosen=currentAlgoRankings.filter(x=>selectedAlgoIds.has(x.id));
   const count=$('#sheetSelectionCount');if(count)count.textContent=`当前算法：${chosen[0]?.name||'—'}`;
   const kicker=$('#algoSheetKicker');if(kicker)kicker.textContent='ALGORITHM DETAILS';$('#algoSheetTitle').textContent='算法预测与公式';$('#algoSheetSubtitle').textContent='统一展示杀组、二门、三门、和值候选与历史回测';$('#clearAlgoSelection').textContent='关闭面板';
-  if(!chosen.length){sheet.classList.remove('open');backdrop.classList.remove('open');document.body.classList.remove('algo-sheet-open');clearTimeout(sheetCloseTimer);sheetCloseTimer=setTimeout(()=>{if(!selectedAlgoIds.size){sheet.hidden=true;backdrop.hidden=true}},240);return}
+  if(!chosen.length){sheet.classList.remove('open');backdrop.classList.remove('open');document.body.classList.remove('algo-sheet-open');clearTimeout(sheetCloseTimer);sheetCloseTimer=setTimeout(()=>{if(!selectedAlgoIds.size){sheet.style.removeProperty('visibility');sheet.hidden=true;backdrop.hidden=true}},240);return}
   const newlyOpened=sheet.hidden;
-  clearTimeout(sheetCloseTimer);sheet.hidden=false;backdrop.hidden=false;document.body.classList.add('algo-sheet-open');
+  if(newlyOpened)sheetReturnFocus=document.activeElement;
+  clearTimeout(sheetCloseTimer);sheet.hidden=false;sheet.style.visibility='visible';backdrop.hidden=false;document.body.classList.add('algo-sheet-open');
   body.innerHTML=chosen.map(x=>{
     const formulaBlock=x.formula?`<section class="sheet-formula"><div class="subhead"><span>公式 / 计算路线</span><span class="tag">可复核</span></div><pre>${esc(x.formula)}</pre></section>`:'';
     const detail=x.output?.sourceSummary;
@@ -821,7 +829,7 @@ function renderAlgoSheet(){
     return `<article class="sheet-algo-card"><div class="sheet-algo-top"><div><b>#${currentAlgoRankings.findIndex(v=>v.id===x.id)+1} · ${esc(x.name)}</b><br><small>${esc(x.source)} · 算法 ID ${esc(x.id)}</small></div><span class="tag">回测 ${x.hit}/${x.tested}</span></div>${formulaBlock}${sourceSummaryBlock}<div class="sheet-metrics"><div class="sheet-metric"><span>历史杀组避开率</span><b>${(x.rate*100).toFixed(1)}%</b></div><div class="sheet-metric"><span>当前预测杀组</span><b>${esc(x.kill)}</b></div><div class="sheet-metric"><span>回测样本</span><b>${x.tested}</b></div></div><div class="subhead" style="margin-top:12px"><span>杀号总结</span><span class="tag">1 组</span></div><div class="sheet-kill-summary"><b>${esc(x.kill)}</b><small>预测杀组 · 以所选历史窗口逐期回测</small></div><div class="subhead" style="margin-top:12px"><span>二门组合</span><span class="tag">2 组</span></div><div class="sheet-groups">${x.twoGroups.map(g=>`<div class="sheet-group">${esc(g)}</div>`).join('')}</div><div class="subhead" style="margin-top:10px"><span>三门组合</span><span class="tag">3 组</span></div><div class="sheet-groups">${x.threeGroups.map(g=>`<div class="sheet-group">${esc(g)}</div>`).join('')}</div>${sumBlock}<p class="sheet-note">${x.hasKill?'':'当前样本暂未产生有效杀组输出；二门、三门仅作该窗口的综合组合参考。'}历史命中率只反映真实开奖历史中的回测结果，不代表下一期概率或命中保证。二门/三门若不是该算法原生输出，会明确按其他组合参考逻辑生成。</p></article>`;
   }).join('')+renderRangeTuningControls();
   if(newlyOpened)setSheetState('half');
-  requestAnimationFrame(()=>{sheet.classList.add('open');backdrop.classList.add('open')});
+  requestAnimationFrame(()=>{sheet.classList.add('open');backdrop.classList.add('open');if(newlyOpened)$('#closeAlgoSheet')?.focus({preventScroll:true})});
 }
 function renderRangeTuningControls(){
   const hist=currentRecords();const model=rangeKillModel(hist);const r=model.range;
@@ -835,7 +843,7 @@ function applyRangeTuning(force=true){
 function closeAlgoSheet(clear=true){
   if(clear){selectedAlgoIds.clear();document.querySelectorAll('#algoLeaderboard [data-algo-id]').forEach(x=>{x.classList.remove('is-active');x.setAttribute('aria-pressed','false')});sheetMode='algo';const sheetEl=$('#algoSheet');if(sheetEl)sheetEl.dataset.sheetMode='algo';}
   const sheet=$('#algoSheet'),backdrop=$('#algoSheetBackdrop');if(sheet){sheet.classList.remove('open','is-dragging');sheet.style.removeProperty('height');sheet.style.removeProperty('transform')}if(backdrop)backdrop.classList.remove('open');document.body.classList.remove('algo-sheet-open');
-  clearTimeout(sheetCloseTimer);sheetCloseTimer=setTimeout(()=>{if(!selectedAlgoIds.size){if(sheet)sheet.hidden=true;if(backdrop)backdrop.hidden=true}},240);
+  clearTimeout(sheetCloseTimer);sheetCloseTimer=setTimeout(()=>{if(!selectedAlgoIds.size){if(sheet){sheet.style.removeProperty('visibility');sheet.hidden=true;}if(backdrop)backdrop.hidden=true;const target=sheetReturnFocus;sheetReturnFocus=null;if(target&&target.isConnected&&typeof target.focus==='function')target.focus({preventScroll:true})}},240);
   const count=$('#sheetSelectionCount');if(count)count.textContent=selectedAlgoIds.size?`当前算法：${[...selectedAlgoIds][0]}`:'当前未打开算法';
 }
 /* Goblin original algorithm port (adapted from 哥布林顶级预测_发布版.html).
@@ -1027,8 +1035,89 @@ function eraseScratch(e){
   }
 }
 let themeTransitionBusy=false;
-function setTheme(mode){const next=mode==='light'?'light':'dark';const root=document.documentElement;const body=document.body;root.dataset.theme=next;body.dataset.theme=next;root.style.colorScheme=next;body.style.colorScheme=next;safeSet('ka28.lab.theme',next);const btn=$('#themeBtn');if(btn){btn.innerHTML=next==='light'?'<svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M20.5 15.1A8.6 8.6 0 0 1 8.9 3.5 8.8 8.8 0 1 0 20.5 15.1Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>':'<svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';btn.title=next==='light'?'切换到暗色主题':'切换到亮色主题';btn.setAttribute('aria-label',btn.title);btn.setAttribute('aria-pressed',String(next==='dark'))}const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=next==='light'?'#f3f4ec':'#101412'}
-function toggleThemeFromButton(){if(themeTransitionBusy)return;const btn=$('#themeBtn');const next=document.body.dataset.theme==='light'?'dark':'light';if(!btn){setTheme(next);return}const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;if(reduced||typeof document.startViewTransition!=='function'){setTheme(next);return}const rect=btn.getBoundingClientRect();const x=rect.left+rect.width/2;const y=rect.top+rect.height/2;const farX=Math.max(x,window.innerWidth-x);const farY=Math.max(y,window.innerHeight-y);const radius=Math.ceil(Math.hypot(farX,farY)+24);const root=document.documentElement;root.style.setProperty('--theme-origin-x',`${x}px`);root.style.setProperty('--theme-origin-y',`${y}px`);root.style.setProperty('--theme-reveal-radius',`${radius}px`);let transition;themeTransitionBusy=true;btn.disabled=true;const cleanup=()=>{root.style.removeProperty('--theme-origin-x');root.style.removeProperty('--theme-origin-y');root.style.removeProperty('--theme-reveal-radius');themeTransitionBusy=false;btn.disabled=false};try{transition=document.startViewTransition(()=>setTheme(next));transition.finished.catch(()=>{}).finally(cleanup)}catch(_){setTheme(next);cleanup()}}
+let themeVisualTimer=0;
+let themeButtonTimer=0;
+function setTheme(mode,animateControl=false,transitionColors=false){
+  const next=mode==='light'?'light':'dark';
+  const root=document.documentElement;
+  const body=document.body;
+  const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if(transitionColors && !reduced){
+    body.classList.add('ka28-theme-transitioning');
+    if(themeVisualTimer)window.clearTimeout(themeVisualTimer);
+    themeVisualTimer=window.setTimeout(()=>body.classList.remove('ka28-theme-transitioning'),190);
+  }else{
+    body.classList.remove('ka28-theme-transitioning');
+    if(themeVisualTimer)window.clearTimeout(themeVisualTimer);
+  }
+  root.dataset.theme=next;
+  body.dataset.theme=next;
+  root.style.colorScheme=next;
+  body.style.colorScheme=next;
+  safeSet('ka28.lab.theme',next);
+  const btn=$('#themeBtn');
+  if(btn){
+    const icon=next==='light'
+      ? '<svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M20.5 15.1A8.6 8.6 0 0 1 8.9 3.5 8.8 8.8 0 1 0 20.5 15.1Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : '<svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+    btn.innerHTML=icon;
+    btn.title=next==='light'?'切换到暗色主题':'切换到亮色主题';
+    btn.setAttribute('aria-label',btn.title);
+    btn.setAttribute('aria-pressed',String(next==='dark'));
+    if(animateControl && !reduced){
+      btn.classList.remove('is-switching');
+      // Force a style boundary so repeat taps replay only the small button animation.
+      void btn.offsetWidth;
+      btn.classList.add('is-switching');
+      if(themeButtonTimer)window.clearTimeout(themeButtonTimer);
+      themeButtonTimer=window.setTimeout(()=>btn.classList.remove('is-switching'),360);
+    }else{
+      btn.classList.remove('is-switching');
+    }
+  }
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta)meta.content=next==='light'?'#f3f4ec':'#101412';
+}
+function toggleThemeFromButton(){
+  if(themeTransitionBusy)return;
+  const btn=$('#themeBtn');
+  const next=document.body.dataset.theme==='light'?'dark':'light';
+  if(!btn){setTheme(next,true,true);return}
+  const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const isMobile=window.matchMedia?.('(max-width: 760px), (hover: none)').matches;
+  const saveData=!!navigator.connection?.saveData;
+  const lowMemory=typeof navigator.deviceMemory==='number' && navigator.deviceMemory<4;
+  const canViewTransition=!reduced&&!isMobile&&!saveData&&!lowMemory&&typeof document.startViewTransition==='function';
+  // Mobile avoids a full-page snapshot and clip reveal, which was the source of stutter on phones.
+  if(!canViewTransition){setTheme(next,true,!reduced);return}
+  themeTransitionBusy=true;
+  btn.disabled=true;
+  let transitionGuard=0;
+  const cleanup=()=>{
+    if(transitionGuard)window.clearTimeout(transitionGuard);
+    themeTransitionBusy=false;
+    btn.disabled=false;
+    // Let the one-shot icon animation finish on its own timer.
+  };
+  // If a browser drops/pauses a View Transition, never leave the control locked.
+  transitionGuard=window.setTimeout(cleanup,420);
+  try{
+    const transition=document.startViewTransition(()=>setTheme(next,true,false));
+    transition.finished.then(cleanup,cleanup);
+  }catch(_){setTheme(next,true,true);cleanup()}
+}
+
+function initThemeControlBeforeAuth(){
+  // The theme control is available on the MiYan gate too; authorization only gates forecast features.
+  const saved=safeGet('ka28.lab.theme');
+  setTheme(saved==='dark'?'dark':'light');
+  const btn=document.getElementById('themeBtn');
+  if(btn && btn.dataset.themeHandlerBound!=='true'){
+    btn.dataset.themeHandlerBound='true';
+    btn.addEventListener('click',toggleThemeFromButton);
+  }
+}
+initThemeControlBeforeAuth();
 
 function omissionOf(hist,fn){for(let i=hist.length-1,gap=0;i>=0;i--,gap++)if(fn(hist[i]))return gap;return hist.length}
 function esc(s){return String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
@@ -1038,7 +1127,7 @@ function renderRecent(hist){
   const requested=Math.max(1,Math.min(200,Number($('#drawHistoryCountSelect')?.value)||20));
   const newest=hist.slice(-requested).reverse();
   $('#recentRows').innerHTML=newest.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(normalizeTime(r.time))}</td><td class="num">${r.digits.map(esc).join(' + ')}</td><td>${esc(r.sum)}</td><td>${esc(r.combo)}</td><td>${esc(r.edge)}</td><td>${esc(r.shape)}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:18px">API 尚未返回历史开奖</td></tr>';
-  const count=$('#drawHistoryCount');if(count)count.textContent=`最近 ${newest.length}/${requested} 期`;
+  const count=$('#drawHistoryCount');if(count){count.textContent=`最近 ${newest.length}/${requested} 期${state.historyError?' · 历史同步异常':''}`;count.title=state.historyError?`历史接口暂不可用：${state.historyError}`:`显示最近 ${newest.length} 期有效开奖记录`;}
   const table=$('#drawHistorySection .table-wrap');if(table)table.setAttribute('aria-label',`最近 ${newest.length} 期真实开奖记录`);
   const sheet=$('#algoSheet');if(sheetMode==='records'&&sheet&&!sheet.hidden)renderRecentSheet(false);
 }
@@ -1059,9 +1148,9 @@ function renderRecentSheet(openPanel=false){
   sheetMode='records';sheet.dataset.sheetMode='records';selectedAlgoIds.clear();
   document.querySelectorAll('#algoLeaderboard [data-algo-id]').forEach(x=>{x.classList.remove('is-active');x.setAttribute('aria-pressed','false')});
   clearTimeout(sheetCloseTimer);sheet.classList.remove('is-dragging');sheet.style.removeProperty('height');sheet.style.removeProperty('transform');
-  const wasHidden=sheet.hidden;sheet.hidden=false;backdrop.hidden=false;document.body.classList.add('algo-sheet-open');
+  sheet.hidden=false;sheet.style.visibility='visible';backdrop.hidden=false;document.body.classList.add('algo-sheet-open');
   setSheetState('half');
-  requestAnimationFrame(()=>{sheet.classList.add('open');backdrop.classList.add('open')});
+  requestAnimationFrame(()=>{sheet.classList.add('open');backdrop.classList.add('open');if(wasHidden)$('#closeAlgoSheet')?.focus({preventScroll:true})});
   if(wasHidden){const grabber=$('.sheet-grabber');grabber?.setAttribute('aria-label','拖动调整真实开奖记录面板高度');}
 }
 
@@ -1212,14 +1301,15 @@ function renderForecastSheet(rows){
 function openForecastHistory(){
   const sheet=$('#algoSheet'),backdrop=$('#algoSheetBackdrop'),body=$('#algoSheetBody');
   if(!sheet||!backdrop||!body)return;
+  const wasHidden=sheet.hidden;if(wasHidden)sheetReturnFocus=document.activeElement;
   const rows=rollingForecasts(Number($('#forecastCountSelect')?.value)||20);
   sheetMode='forecast';sheet.dataset.sheetMode='forecast';selectedAlgoIds.clear();
   document.querySelectorAll('#algoLeaderboard [data-algo-id]').forEach(x=>{x.classList.remove('is-active');x.setAttribute('aria-pressed','false')});
   clearTimeout(sheetCloseTimer);sheet.classList.remove('is-dragging');sheet.style.removeProperty('height');sheet.style.removeProperty('transform');
   renderForecastSheet(rows);
-  const wasHidden=sheet.hidden;sheet.hidden=false;backdrop.hidden=false;document.body.classList.add('algo-sheet-open');
+  sheet.hidden=false;sheet.style.visibility='visible';backdrop.hidden=false;document.body.classList.add('algo-sheet-open');
   setSheetState('half');
-  requestAnimationFrame(()=>{sheet.classList.add('open');backdrop.classList.add('open')});
+  requestAnimationFrame(()=>{sheet.classList.add('open');backdrop.classList.add('open');if(wasHidden)$('#closeAlgoSheet')?.focus({preventScroll:true})});
   const btn=$('#forecastMoreBtn');if(btn)btn.setAttribute('aria-haspopup','dialog');
 }
 function renderForecastRounds(){
@@ -1314,6 +1404,6 @@ sheetDragTargets.forEach(target=>{
   target.addEventListener('pointerup',e=>endSheetDrag(e,false));
   target.addEventListener('pointercancel',e=>endSheetDrag(e,true));
   target.addEventListener('lostpointercapture',e=>{if(sheetDrag&&e.pointerId===sheetDrag.pointerId)endSheetDrag(e,true)});
-});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#algoSheet').hidden)closeAlgoSheet(true)});$('#themeBtn').addEventListener('click',toggleThemeFromButton);$('#soundBtn').addEventListener('click',()=>{soundEnabled=!soundEnabled;$('#soundBtn').setAttribute('aria-pressed',String(soundEnabled));$('#soundBtn').textContent=soundEnabled?'🔔 强提示音：开':'🔔 强提示音：关';if(soundEnabled){playTripleChime();toast('已开启高音量叮叮叮提示音')}else toast('提示音已关闭')});$('#scratchBtn').addEventListener('click',()=>scratchEnabled?closeScratch():openScratch());const canvas=$('#scratchCanvas');canvas.addEventListener('pointerdown',e=>{if(!scratchEnabled)return;canvas.setPointerCapture?.(e.pointerId);scratchLastPoint=null;eraseScratch(e)});canvas.addEventListener('pointermove',e=>{if(!scratchEnabled||!e.buttons)return;eraseScratch(e)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>canvas.addEventListener(ev,()=>{scratchLastPoint=null}));let scratchResizeFrame=0;window.addEventListener('resize',()=>{if(!scratchEnabled||scratchResizeFrame)return;scratchResizeFrame=requestAnimationFrame(()=>{scratchResizeFrame=0;if(scratchEnabled)sizeScratchCanvas()})});}
+});document.addEventListener('keydown',e=>{const sheet=$('#algoSheet');if(!sheet||sheet.hidden||!sheet.classList.contains('open')||e.key!=='Tab')return;const nodes=Array.from(sheet.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(el=>!el.hidden&&el.getAttribute('aria-hidden')!=='true'&&el.getClientRects().length);if(!nodes.length){e.preventDefault();sheet.focus({preventScroll:true});return}const first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&(document.activeElement===first||!sheet.contains(document.activeElement))){e.preventDefault();last.focus()}else if(!e.shiftKey&&(document.activeElement===last||!sheet.contains(document.activeElement))){e.preventDefault();first.focus()}});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#algoSheet').hidden)closeAlgoSheet(true)});$('#soundBtn').addEventListener('click',()=>{soundEnabled=!soundEnabled;$('#soundBtn').setAttribute('aria-pressed',String(soundEnabled));$('#soundBtn').textContent=soundEnabled?'🔔 强提示音：开':'🔔 强提示音：关';if(soundEnabled){playTripleChime();toast('已开启高音量叮叮叮提示音')}else toast('提示音已关闭')});$('#scratchBtn').addEventListener('click',()=>scratchEnabled?closeScratch():openScratch());const canvas=$('#scratchCanvas');canvas.addEventListener('pointerdown',e=>{if(!scratchEnabled)return;canvas.setPointerCapture?.(e.pointerId);scratchLastPoint=null;eraseScratch(e)});canvas.addEventListener('pointermove',e=>{if(!scratchEnabled||!e.buttons)return;eraseScratch(e)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>canvas.addEventListener(ev,()=>{scratchLastPoint=null}));let scratchResizeFrame=0;window.addEventListener('resize',()=>{if(!scratchEnabled||scratchResizeFrame)return;scratchResizeFrame=requestAnimationFrame(()=>{scratchResizeFrame=0;if(scratchEnabled)sizeScratchCanvas()})});}
 window.__KA28_START_AFTER_AUTH=boot;
 })();

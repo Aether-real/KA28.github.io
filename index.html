@@ -8,10 +8,12 @@
 <title>KA28开奖网 · 预测实验室</title>
 <link crossorigin="" href="https://pc28.world" rel="preconnect"/>
 <link crossorigin="" href="https://my.b6w.cn" rel="preconnect"/>
-<link href="./css/layout-compat.css?v=20261026-status-top3-expand3" rel="stylesheet"/>
-<link href="./css/styles.css?v=20261026-status-top3-expand3" rel="stylesheet"/>
-<link href="./css/experience.css?v=20261026-status-top3-expand3" rel="stylesheet"/>
-<script defer="" src="./js/loader.js?v=20261026-status-top3-expand3"></script>
+<link href="./css/layout-compat.css?v=20261026-coop-disclosure5" rel="stylesheet"/>
+<link href="./css/styles.css?v=20261026-coop-disclosure5" rel="stylesheet"/>
+<link href="./css/experience.css?v=20261026-coop-disclosure5" rel="stylesheet"/>
+<link href="./css/ads-carousel.css?v=20261026-coop-disclosure5" rel="stylesheet"/>
+<script defer="" src="./js/ads-carousel.js?v=20261026-coop-disclosure5"></script>
+<script defer="" src="./js/loader.js?v=20261026-coop-disclosure5"></script>
 </head>
 <body class="ka28-redesign" data-data-ready="false">
 <div aria-live="polite" class="ka28-boot-notice" id="ka28BootNotice" role="status">正在加载 KA28 组件…</div>
@@ -59,6 +61,22 @@
 <button aria-label="查看网站公告与更新" class="btn secondary mini top-announcement-btn" id="announcementBtn" title="公告与更新" type="button"><svg class="toolbar-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 21h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span class="top-announcement-label">公告</span></button>
 </div>
 </header>
+  <!-- 广告轮播由远程文档驱动；加载时显示骨架，文档为空时整块隐藏。 -->
+  <section aria-label="广告轮播" aria-busy="true" class="ad-carousel-section fade" id="adCarouselSection" hidden style="--d:40ms">
+    <div class="ad-carousel-shell">
+      <span class="ad-carousel-disclosure">广告</span>
+      <div aria-label="广告轮播，可左右滑动" aria-roledescription="carousel" class="ad-carousel-viewport" id="adCarouselViewport">
+        <div class="ad-carousel-track" id="adCarouselTrack">
+          <div aria-hidden="true" class="ad-skeleton-slide">
+            <span class="ad-skeleton-mark"></span>
+            <span class="ad-skeleton-copy"><i class="ad-skeleton-line title"></i><i class="ad-skeleton-line body"></i></span>
+            <span class="ad-skeleton-action"></span>
+          </div>
+        </div>
+      </div>
+      <div class="ad-carousel-footer"><p class="ad-cooperation-note">合作推荐 <span aria-hidden="true" class="ad-cooperation-dot">●</span> 外部链接自行判断</p><span aria-label="广告轮播位置" class="ad-carousel-position" hidden id="adCarouselPosition" role="img"></span></div>
+    </div>
+  </section>
   <section aria-label="开奖时间与倒计时" class="hero hero-time-header fade" style="--d:80ms">
 <div class="hero-timeblock">
 <div class="eyebrow">LIVE DRAW TIME</div>

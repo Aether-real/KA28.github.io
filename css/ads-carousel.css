@@ -1,0 +1,75 @@
+/* Compact KA28 ad carousel: swipe + auto-rotation, no arrow controls. */
+body.ka28-redesign .ad-carousel-section {
+  width: 100%; margin: 0 0 10px; padding-top: 7px; min-width: 0;
+  animation: ka28AdEnter 260ms cubic-bezier(.2,.8,.2,1) both;
+}
+body.ka28-redesign .ad-carousel-section[hidden] { display: none !important; }
+body.ka28-redesign .ad-carousel-shell {
+  position: relative;
+  border: 1px solid color-mix(in srgb,var(--line2) 72%,transparent);
+  background: linear-gradient(110deg,color-mix(in srgb,var(--glass) 96%,var(--mint) 4%),var(--glass));
+  border-radius: 15px; box-shadow: 0 5px 16px rgb(0 0 0 / 7%); overflow: visible; padding: 6px;
+}
+/* Keep the disclosure badge at the upper-left edge, not under the carousel. */
+body.ka28-redesign .ad-carousel-disclosure {
+  position: absolute; z-index: 2; top: -7px; left: 12px;
+  display: inline-flex; align-items: center; min-height: 14px; padding: 1px 7px;
+  border: 1px solid color-mix(in srgb,var(--line2) 76%,transparent);
+  border-radius: 999px; background: var(--glass); color: var(--muted);
+  font-size: 9px; font-weight: 700; line-height: 1; letter-spacing: .02em;
+}
+body.ka28-redesign .ad-carousel-viewport { position:relative; overflow:hidden; width:100%; min-width:0; border-radius:11px; touch-action:pan-y; user-select:none; -webkit-user-select:none; }
+body.ka28-redesign .ad-carousel-track { display:flex; width:100%; transform:translate3d(0,0,0); transition:transform 280ms cubic-bezier(.22,.75,.24,1); }
+body.ka28-redesign .ad-slide { position:relative; flex:0 0 100%; min-width:0; box-sizing:border-box; display:grid; grid-template-columns:31px minmax(0,1fr) auto; align-items:center; gap:10px; min-height:69px; padding:8px 9px; border:1px solid var(--line); border-radius:11px; background:linear-gradient(105deg,var(--surface-soft),transparent 76%),var(--glass2); }
+body.ka28-redesign .ad-brand-mark { width:30px; height:30px; border-radius:9px; display:grid; place-items:center; flex:0 0 auto; color:var(--primary-ink); background:var(--mint); box-shadow:0 3px 9px color-mix(in srgb,var(--mint) 17%,transparent); }
+body.ka28-redesign .ad-brand-mark svg { width:17px; height:17px; }
+body.ka28-redesign .ad-copy { min-width:0; align-self:center; }
+body.ka28-redesign .ad-card-title { color:var(--text); font-size:clamp(12px,1.6vw,14px); line-height:1.35; margin:0; font-weight:780; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body.ka28-redesign .ad-card-body { color:var(--text); font-size:11px; font-weight:600; line-height:1.35; margin:2px 0 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body.ka28-redesign .ad-card-subtitle { color:var(--muted); font-size:10px; line-height:1.35; margin:2px 0 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body.ka28-redesign .ad-visit-button { display:inline-flex; align-items:center; justify-content:center; min-height:31px; padding:0 11px; border-radius:999px; background:var(--mint); color:var(--primary-ink); text-decoration:none; white-space:nowrap; font-size:10px; font-weight:800; box-shadow:0 3px 10px color-mix(in srgb,var(--mint) 13%,transparent); transition:transform 160ms ease,box-shadow 160ms ease,filter 160ms ease; }
+body.ka28-redesign .ad-visit-button:hover { transform:translateY(-1px); filter:brightness(1.04); box-shadow:0 6px 13px color-mix(in srgb,var(--mint) 20%,transparent); }
+body.ka28-redesign .ad-visit-button:active { transform:scale(.96); }
+body.ka28-redesign .ad-visit-button:focus-visible { outline:2px solid var(--focus-ring); outline-offset:2px; }
+body.ka28-redesign .ad-carousel-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:4px 5px 0; min-height:14px; color:var(--faint); }
+body.ka28-redesign .ad-cooperation-note { display:inline-flex; align-items:center; gap:4px; min-width:0; margin:0; color:var(--muted); font-size:9px; font-weight:560; line-height:1.25; letter-spacing:.015em; white-space:nowrap; }
+body.ka28-redesign .ad-cooperation-dot { color:var(--mint); font-size:8px; line-height:1; text-shadow:0 0 5px color-mix(in srgb,var(--mint) 24%,transparent); }
+body.ka28-redesign .ad-carousel-position { display:flex; align-items:center; justify-content:flex-end; gap:5px; min-height:7px; }
+body.ka28-redesign .ad-carousel-position[hidden] { display:none !important; }
+body.ka28-redesign .ad-carousel-dot { display:block; flex:0 0 auto; width:6px; height:6px; border-radius:999px; background:var(--line2); opacity:.84; transition:width 220ms cubic-bezier(.2,.8,.2,1),background-color 220ms ease,opacity 220ms ease; }
+body.ka28-redesign .ad-carousel-dot.is-active { width:18px; background:var(--mint); opacity:1; box-shadow:0 0 10px color-mix(in srgb,var(--mint) 28%,transparent); }
+
+/* Skeleton mirrors the eventual compact card and is only shown during first load. */
+body.ka28-redesign .ad-skeleton-slide { flex:0 0 100%; min-width:0; box-sizing:border-box; display:grid; grid-template-columns:31px minmax(0,1fr) 43px; align-items:center; gap:10px; min-height:69px; padding:8px 9px; border:1px solid var(--line); border-radius:11px; background:var(--glass2); }
+body.ka28-redesign .ad-skeleton-mark,body.ka28-redesign .ad-skeleton-action,body.ka28-redesign .ad-skeleton-line { display:block; background:linear-gradient(100deg,var(--surface-soft) 20%,color-mix(in srgb,var(--mint) 15%,var(--surface-soft)) 38%,var(--surface-soft) 56%); background-size:220% 100%; animation:ka28AdShimmer 1.25s ease-in-out infinite; }
+body.ka28-redesign .ad-skeleton-mark { width:30px;height:30px;border-radius:9px; }
+body.ka28-redesign .ad-skeleton-copy { display:flex; min-width:0; flex-direction:column; gap:7px; }
+body.ka28-redesign .ad-skeleton-line { height:7px; border-radius:99px; }
+body.ka28-redesign .ad-skeleton-line.title { width:48%; height:9px; }
+body.ka28-redesign .ad-skeleton-line.body { width:76%; }
+body.ka28-redesign .ad-skeleton-action { width:43px;height:27px;border-radius:999px; }
+body.ka28-redesign .ad-carousel-section:not(.is-loading) .ad-skeleton-slide { display:none; }
+@keyframes ka28AdShimmer { 0% { background-position:100% 0; } 100% { background-position:-120% 0; } }
+@keyframes ka28AdEnter { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+@media(max-width:420px) {
+  body.ka28-redesign .ad-carousel-shell { padding:5px; border-radius:13px; }
+  body.ka28-redesign .ad-slide,body.ka28-redesign .ad-skeleton-slide { grid-template-columns:28px minmax(0,1fr) auto; gap:8px; min-height:64px; padding:7px; }
+  body.ka28-redesign .ad-brand-mark,body.ka28-redesign .ad-skeleton-mark { width:27px;height:27px;border-radius:8px; }
+  body.ka28-redesign .ad-brand-mark svg { width:15px;height:15px; }
+  body.ka28-redesign .ad-visit-button { min-height:29px; padding:0 9px; }
+  body.ka28-redesign .ad-card-body,body.ka28-redesign .ad-card-subtitle { font-size:9px; }
+}
+@media(max-width:340px) {
+  body.ka28-redesign .ad-slide,body.ka28-redesign .ad-skeleton-slide { grid-template-columns:25px minmax(0,1fr) auto; gap:6px; padding:6px; }
+  body.ka28-redesign .ad-brand-mark,body.ka28-redesign .ad-skeleton-mark { width:24px;height:24px; }
+  body.ka28-redesign .ad-card-title { font-size:11px; }
+  body.ka28-redesign .ad-visit-button { min-height:27px; padding:0 8px; font-size:9px; }
+  body.ka28-redesign .ad-carousel-footer { gap:5px; padding-right:3px; padding-left:3px; }
+  body.ka28-redesign .ad-cooperation-note { font-size:8px; gap:3px; }
+  body.ka28-redesign .ad-carousel-position { gap:4px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  body.ka28-redesign .ad-carousel-section { animation:none !important; }
+  body.ka28-redesign .ad-carousel-track,body.ka28-redesign .ad-visit-button,body.ka28-redesign .ad-carousel-dot { transition:none !important; }
+  body.ka28-redesign .ad-skeleton-mark,body.ka28-redesign .ad-skeleton-action,body.ka28-redesign .ad-skeleton-line { animation:none !important; }
+}

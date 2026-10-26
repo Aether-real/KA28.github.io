@@ -404,14 +404,33 @@ body.ka28-redesign .tag,
 body.ka28-redesign .chip,
 body.ka28-redesign .status { overflow-wrap: anywhere; }
 
-/* Motion stays on opacity/transform; large surfaces avoid expensive blur and filter animation. */
-@keyframes ka28-theme-reveal {
-  from { clip-path: circle(0 at var(--theme-origin-x, 50%) var(--theme-origin-y, 0)); }
-  to { clip-path: circle(var(--theme-reveal-radius, 150vmax) at var(--theme-origin-x, 50%) var(--theme-origin-y, 0)); }
+/* Theme motion: avoid a full-viewport clip-path reveal (expensive on mid-range phones).
+   Desktop gets a short opacity crossfade; mobile uses small-property color transitions. */
+@keyframes ka28-theme-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-::view-transition-group(root) { animation-duration: 620ms; }
-::view-transition-old(root) { animation: none !important; mix-blend-mode: normal; }
-::view-transition-new(root) { animation: ka28-theme-reveal 620ms cubic-bezier(.16,.78,.19,1) both !important; mix-blend-mode: normal; }
+@keyframes ka28-theme-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+::view-transition-group(root) { animation-duration: 230ms !important; }
+::view-transition-old(root) {
+  animation: ka28-theme-fade-out 190ms ease-out both !important;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  animation: ka28-theme-fade-in 230ms cubic-bezier(.2,.7,.2,1) both !important;
+  mix-blend-mode: normal;
+}
+body.ka28-redesign.ka28-theme-transitioning .top,
+body.ka28-redesign.ka28-theme-transitioning .panel,
+body.ka28-redesign.ka28-theme-transitioning .glass,
+body.ka28-redesign.ka28-theme-transitioning .status,
+body.ka28-redesign.ka28-theme-transitioning .tag,
+body.ka28-redesign.ka28-theme-transitioning .theme-orb {
+  transition: color 150ms linear, background-color 150ms linear, border-color 150ms linear, box-shadow 150ms linear !important;
+}
 
 @media (max-width: 900px) {
   .algo-leader-columns,
@@ -2194,7 +2213,7 @@ body.ka28-redesign .top-tools .top-announcement-btn { padding-inline: 16px !impo
 body.ka28-redesign .top-tools .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgb(12 24 24 / 9%) !important; }
 body.ka28-redesign .top-tools .btn:active { transform: scale(.97); }
 
-/* A luminous, tactile theme switch that uses the existing View Transitions handler. */
+/* A luminous, tactile theme switch; heavy full-page motion is avoided on mobile. */
 body.ka28-redesign .theme-orb {
   position: fixed;
   z-index: 1200;
@@ -2213,7 +2232,7 @@ body.ka28-redesign .theme-orb {
   isolation: isolate;
   -webkit-tap-highlight-color: transparent;
   transition: transform 240ms cubic-bezier(.2,.8,.2,1), box-shadow 240ms ease, filter 240ms ease;
-  animation: ka28-theme-orb-enter 520ms cubic-bezier(.2,.8,.2,1) both;
+  animation: ka28-theme-orb-enter 360ms cubic-bezier(.2,.8,.2,1) both;
 }
 body.ka28-redesign .theme-orb::before,
 body.ka28-redesign .theme-orb::after {
@@ -2225,7 +2244,13 @@ body.ka28-redesign .theme-orb::after {
   pointer-events: none;
   z-index: -1;
 }
-body.ka28-redesign .theme-orb::before { animation: ka28-orb-halo 3.4s ease-out infinite; }
+body.ka28-redesign .theme-orb::before { opacity: 0; transform: scale(.86); }
+body.ka28-redesign .theme-orb.is-switching::before { animation: ka28-orb-burst 360ms ease-out both; }
+body.ka28-redesign .theme-orb.is-switching { animation: ka28-theme-button-pop 300ms cubic-bezier(.2,.8,.2,1) both; }
+body.ka28-redesign .theme-orb.is-switching .theme-icon { animation: ka28-theme-icon-swap 300ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes ka28-orb-burst { 0% { opacity: .62; transform: scale(.82); } 100% { opacity: 0; transform: scale(1.24); } }
+@keyframes ka28-theme-button-pop { 0% { scale: 1; } 42% { scale: .93; } 76% { scale: 1.055; } 100% { scale: 1; } }
+@keyframes ka28-theme-icon-swap { 0% { opacity: 0; transform: rotate(-55deg) scale(.58); } 70% { opacity: 1; transform: rotate(12deg) scale(1.08); } 100% { opacity: 1; transform: rotate(0) scale(1); } }
 body.ka28-redesign .theme-orb::after { inset: 5px; border-color: rgb(255 255 255 / 45%); opacity: .55; }
 body.ka28-redesign .theme-orb .theme-icon { width: 25px; height: 25px; filter: drop-shadow(0 1px 1px rgb(0 0 0 / 10%)); transition: transform 380ms cubic-bezier(.2,.8,.2,1); }
 body.ka28-redesign .theme-orb:hover { transform: translateY(-4px) rotate(-5deg) scale(1.035); filter: saturate(1.08); box-shadow: 0 16px 38px color-mix(in srgb, var(--mint) 42%, transparent), inset 0 2px 3px rgb(255 255 255 / 76%), inset 0 -5px 12px rgb(0 0 0 / 13%); }
@@ -2233,7 +2258,6 @@ body.ka28-redesign .theme-orb:hover .theme-icon { transform: rotate(18deg) scale
 body.ka28-redesign .theme-orb:active { transform: scale(.91); }
 body.ka28-redesign .theme-orb:focus-visible { outline: 3px solid var(--text); outline-offset: 5px; }
 @keyframes ka28-theme-orb-enter { from { opacity: 0; transform: translate3d(0, 16px, 0) scale(.86); } to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); } }
-@keyframes ka28-orb-halo { 0% { transform: scale(.92); opacity: .75; } 75%,100% { transform: scale(1.22); opacity: 0; } }
 
 @media (max-width: 760px) {
   body.ka28-redesign .top {
@@ -2270,7 +2294,12 @@ body.ka28-redesign .theme-orb:focus-visible { outline: 3px solid var(--text); ou
   body.ka28-redesign .theme-orb,
   body.ka28-redesign .theme-orb::before,
   body.ka28-redesign .theme-orb::after,
-  body.ka28-redesign .theme-orb .theme-icon {
+  body.ka28-redesign .theme-orb .theme-icon,
+  body.ka28-redesign.ka28-theme-transitioning .top,
+  body.ka28-redesign.ka28-theme-transitioning .panel,
+  body.ka28-redesign.ka28-theme-transitioning .glass,
+  body.ka28-redesign.ka28-theme-transitioning .status,
+  body.ka28-redesign.ka28-theme-transitioning .tag {
     animation: none !important;
     transition: none !important;
   }
