@@ -431,6 +431,15 @@ LQ_SEEDS.forEach((sd,i)=>add('F'+String(i+1).padStart(2,'0'),'双组种子'+(i+1
 
 return {ALGOS, typeA, typeB, COMBOS, opposite, recommend, luoqiuSeedGroups, luoqiuKill};
 })();
+/* KA28 融合层：把 49 个公式的原始函数以「只读引用」暴露给统一排行榜，
+   用于和新增算法走同一套逐期回测口径。原站逻辑仍在原闭包内运行，
+   此处不改动任何既有计算与渲染行为。 */
+try {
+  if (typeof window !== 'undefined') {
+    window.__KA28_LEGACY_PACK__ = sourceAlgoPack;
+    window.dispatchEvent(new CustomEvent('ka28:legacy-ready'));
+  }
+} catch (_) {}
 
 function safeGet(key){try{return localStorage.getItem(key)}catch(_){return null}}
 function safeSet(key,value){try{localStorage.setItem(key,value)}catch(_){}}
@@ -991,7 +1000,7 @@ function maskScratchDetails(){
 }
 function resetScratchForNewDraw(showToast=false){
   if(!scratchEnabled)return;
-  scratchRevealedForDraw=false;scratchLastPoint=null;scratchMoved=0;
+  scratchRevealedForDraw=false;scratchLastPoint=null;scratchMoved=0;scratchErasePrev=null;
   scratchPrivacySnapshot=captureScratchDetails();maskScratchDetails();
   const canvas=$('#scratchCanvas'),btn=$('#scratchBtn');
   if(canvas)canvas.classList.add('active');
@@ -1021,17 +1030,26 @@ function revealScratchForCurrentDraw(){
   toast('本期开奖已刮开并保持显示；咪牌仍开启，下期开奖会自动重新覆盖');
 }
 function scratchPoint(e){const r=$('#scratchCanvas').getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+/* 独立于 setPointerCapture / lostpointercapture 的擦除轨迹点：即使指针捕获提前丢失，
+   拖动也能连成连续线；同时按下时仍只落一个极小的点，不会「一按就显示差不多」。 */
+let scratchErasePrev=null;
 function eraseScratch(e){
   if(!scratchEnabled||!scratchContext)return;
-  const canvas=$('#scratchCanvas'),p=scratchPoint(e);
-  scratchContext.globalCompositeOperation='destination-out';scratchContext.lineWidth=44;scratchContext.lineCap='round';scratchContext.lineJoin='round';scratchContext.beginPath();
-  if(scratchLastPoint){scratchContext.moveTo(scratchLastPoint.x,scratchLastPoint.y);scratchContext.lineTo(p.x,p.y)}else scratchContext.arc(p.x,p.y,22,0,Math.PI*2);
-  scratchContext.stroke();scratchContext.globalCompositeOperation='source-over';scratchLastPoint=p;scratchMoved++;
-  // Sample less frequently and skip oversized canvases to keep touch interaction smooth.
-  if(scratchMoved%12===0&&canvas.width*canvas.height<8e6){
-    const ctx=canvas.getContext('2d');const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;let clear=0,total=0;
+  const canvas=$('#scratchCanvas'),p=scratchPoint(e),ctx=scratchContext;
+  ctx.globalCompositeOperation='destination-out';ctx.lineWidth=18;ctx.lineCap='round';ctx.lineJoin='round';
+  // sizeScratchCanvas 把 strokeStyle 留在半透明值，destination-out 下只擦掉 34%；
+  // 显式设为不透明，保证拖动一次就干净擦开（同时按下仍只落极小点，不扩散）。
+  ctx.strokeStyle='rgba(0,0,0,1)';ctx.fillStyle='rgba(0,0,0,1)';ctx.beginPath();
+  if(e.type==='pointerdown')scratchErasePrev=null;
+  const prev=scratchLastPoint||scratchErasePrev;
+  if(prev){ctx.moveTo(prev.x,prev.y);ctx.lineTo(p.x,p.y);ctx.stroke()}
+  else{ctx.arc(p.x,p.y,1.5,0,Math.PI*2);ctx.fill()}
+  ctx.globalCompositeOperation='source-over';scratchErasePrev=p;scratchLastPoint=p;scratchMoved++;
+  // 只有真正刮到接近全开才揭示，避免刚按一下就几乎全部显示。
+  if(scratchMoved>36&&scratchMoved%24===0&&canvas.width*canvas.height<8e6){
+    const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;let clear=0,total=0;
     for(let i=3;i<data.length;i+=4*160){total++;if(data[i]<30)clear++}
-    if(total&&clear/total>.43){revealScratchForCurrentDraw()}
+    if(total&&clear/total>.9){revealScratchForCurrentDraw()}
   }
 }
 let themeTransitionBusy=false;
