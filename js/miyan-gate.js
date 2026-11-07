@@ -71,12 +71,96 @@
       updateState.loaded=true;showUpdateMessage(d,manual);return true;
     }).catch(function(e){if(manual){setGateAnnouncement('公告检查失败',(e.message||'请求失败')+'。可检查网络后重试。','error');showNoticeDiagnostic('公告检查失败',(e.message||'请求失败')+'。请检查网络、跨域设置或米验服务端配置。')}else console.warn('[米验公告] 公告检查失败，授权流程不受影响。',e);return false}).finally(function(){updateState.checking=false});
   }  function startApp(){if(window.__KA28_START_AFTER_AUTH&&!window.__KA28_STARTED){window.__KA28_STARTED=true;window.__KA28_START_AFTER_AUTH()}}
+
+  /* ================= 公益模式（由米验后台驱动，前端无按钮/无开关）=================
+   * 判定信号只来自【RSA 验签 + AES 解密后的服务端响应】，前端不硬编码任何放行后门：
+   *  通道 A：UpdateV2 的 custom_configs 云端配置 / 顶层字段里的公益标记
+   *  通道 B：空卡密 auth 探测 —— 后台开启公益时服务端会自行返回 authorized=true，
+   *          并按文档要求用同一 machine_id 完成 recheck，rechecked=true 才放行
+   * 命中后写缓存，之后每次刷新第一帧即进主页面；后台关闭公益则静默复核时收回。
+   * 字段名是"宽容匹配 + 可配置"：若后台实际字段不同，只需改 PUBLIC_KEYS / 正则。 */
+  var PUBLIC_KEYS=['public_mode','free_mode','charity_mode','gongyi','is_public','is_free','free','open_mode','open_access','no_auth','skip_auth','public','charity','benefit','welfare','mode'];
+  var PUBLIC_ON=[1,'1','true','on','yes','open','free','public','charity','gongyi','enable','enabled','公益','免费','公开','免验证','免授权'];
+  function truthyVal(v){
+    if(v===true||v===1)return true;
+    if(typeof v==='string'){var s=v.trim().toLowerCase();return PUBLIC_ON.indexOf(s)>=0||/公益|免费|公开|免验证|免授权/.test(s)}
+    return false;
+  }
+  function publicSignal(d){
+    if(!d||typeof d!=='object')return '';
+    for(var i=0;i<PUBLIC_KEYS.length;i++){
+      var k=PUBLIC_KEYS[i];if(!(k in d))continue;var v=d[k];
+      if(k==='mode'){if(typeof v==='string'&&/^(free|public|charity|open|gongyi|公益|免费|公开)$/i.test(v.trim()))return 'mode='+v}
+      else if(truthyVal(v))return k+'='+String(v);
+    }
+    var cfgs=d.custom_configs;
+    if(Array.isArray(cfgs))for(var j=0;j<cfgs.length;j++){
+      var c=cfgs[j]||{},nm=String(c.name||c.key||''),ct=String(c.content!==undefined?c.content:(c.value!==undefined?c.value:''));
+      if(/公益模式|免费模式|公开模式|免验证|免授权|public_mode|free_mode|charity_mode/i.test(nm)&&truthyVal(ct))return 'custom_config:'+nm;
+    }
+    return '';
+  }
+  function grantPublic(reason,persist){
+    if(persist!==false&&window.KA28_PUBLIC)window.KA28_PUBLIC.write(reason);
+    if(window.KA28_PUBLIC)window.KA28_PUBLIC.apply();
+    if(noticeOverlay)noticeOverlay.hidden=true;
+    gate.hidden=true;document.body.style.overflow='';
+    say('公益模式 · 已直接进入','ok');startApp();
+  }
+  function showGate(){
+    var saved=localStorage.getItem('miyan_card_key');if(saved)input.value=saved;
+    gate.hidden=false;document.body.style.overflow='hidden';say('请输入卡密完成验证。');
+  }
+  /* 三态探测：{granted:true} 放行 / {confirmed:true} 服务端明确拒绝 / null 未知(网络失败不误伤) */
+  function publicAuthProbe(){
+    if(typeof JSEncrypt==='undefined'||typeof CryptoJS==='undefined')return Promise.resolve(null);
+    return request('auth','auth',{card_key:''}).then(function(r){
+      var d=r.data||{};
+      if(!(d.authorized===true||d.authorized==='true'))return {confirmed:true};
+      var sig=publicSignal(d),receipt=d.auth_receipt;
+      if(!receipt)return sig?{granted:true,reason:'auth:'+sig,data:d}:{confirmed:true};
+      return request('recheck','recheck',{auth_receipt:receipt}).then(function(rr){
+        if(rr.data&&(rr.data.rechecked===true||rr.data.rechecked==='true'))return {granted:true,reason:'auth+recheck',data:d};
+        return {confirmed:true};
+      }).catch(function(){return null});
+    }).catch(function(){return null});
+  }
+  function bootGate(){
+    var cached=!!window.__KA28_PUBLIC_CACHED__,preview=!!(window.KA28_PUBLIC&&window.KA28_PUBLIC.isPreview());
+    if(cached||preview){
+      grantPublic(cached?'cache':'preview',!preview);
+      /* 后台静默复核：两个通道都"成功到达服务端且明确不放行"才收回；网络失败保持放行 */
+      if(preview)return;
+      Promise.all([checkUpdate(false).catch(function(){return false}),publicAuthProbe()]).then(function(a){
+        var probe=a[1],sig=publicSignal(updateState.data)||publicSignal(probe&&probe.data);
+        /* 任一通道仍放行 → 保持；任一通道网络未知 → 保持（不误伤离线用户） */
+        if(sig||(probe&&probe.granted))return;
+        var updateOk=a[0]===true,authDenied=!!(probe&&probe.confirmed);
+        /* 仅当两个通道都成功到达服务端、且都明确不再放行时才收回 */
+        if(updateOk&&authDenied){
+          if(window.KA28_PUBLIC){window.KA28_PUBLIC.clear();window.KA28_PUBLIC.revoke()}
+          showGate();
+        }
+      });
+      return;
+    }
+    say('正在复核本设备的授权状态…');
+    var up=checkUpdate(false);
+    Promise.all([up.catch(function(){return false}),recheck(),publicAuthProbe()]).then(function(a){
+      var probe=a[2],sig=publicSignal(updateState.data)||publicSignal(probe&&probe.data);
+      if((probe&&probe.granted)||sig){grantPublic(probe&&probe.reason||('update:'+sig));return}
+      if(a[1])return;                       /* recheck 内部已 unlock + startApp */
+      showGate();
+    });
+  }
   function unlock(data,cardKey){var receipt=data.auth_receipt;if(!receipt){say('验证响应缺少授权凭据，请联系服务端管理员。','err');return}localStorage.setItem('miyan_auth_receipt',receipt);localStorage.setItem('miyan_auth_expiry',String(data.expires_at||'永久'));if(cardKey)localStorage.setItem('miyan_card_key',cardKey);say('验证成功，正在进入预测实验室。','ok');gate.hidden=true;document.body.style.overflow='';startApp()}
   function recheck(){var receipt=localStorage.getItem('miyan_auth_receipt');if(!receipt)return Promise.resolve(false);return request('recheck','recheck',{auth_receipt:receipt}).then(function(r){if(r.data.rechecked===true){gate.hidden=true;document.body.style.overflow='';say('授权复核成功。','ok');startApp();return true}throw new Error('授权已失效，请重新验证')}).catch(function(e){localStorage.removeItem('miyan_auth_receipt');localStorage.removeItem('miyan_auth_expiry');say(e.message||'请重新输入卡密');return false})}
   function auth(){var card=(input.value||'').trim();if(!card){say('请先输入授权卡密。','err');input.focus();return}if(typeof JSEncrypt==='undefined'||typeof CryptoJS==='undefined'){say('加密组件加载失败，请检查网络后刷新。','err');return}busy(true,'验证中…');say('正在建立加密连接并验证卡密…');request('auth','auth',{card_key:card}).then(function(r){var d=r.data,authorized=d.authorized===true||d.authorized==='true';if(!authorized)throw new Error(d.message||'卡密验证未通过');return request('recheck','recheck',{auth_receipt:d.auth_receipt}).then(function(rr){if(rr.data.rechecked!==true)throw new Error('服务端复核失败');unlock(d,card)})}).catch(function(e){say(e.message||'验证失败，请稍后重试。','err')}).finally(function(){busy(false)})}
   function unbind(){var card=(input.value||localStorage.getItem('miyan_card_key')||'').trim();if(!card){say('请先输入需要解绑的卡密。','err');input.focus();return}busy(true,'解绑中…');say('正在请求服务端解绑…');request('unbind','unbind',{card_key:card}).then(function(r){var d=r.data;if(d.status===true||d.status==='true'){localStorage.removeItem('miyan_auth_receipt');localStorage.removeItem('miyan_auth_expiry');localStorage.removeItem('miyan_card_key');say((d.message||'设备解绑成功')+(d.unbind_count!==undefined?'\n已解绑次数：'+d.unbind_count:''),'ok')}else throw new Error(d.message||'解绑失败')}).catch(function(e){say(e.message||'解绑失败，请稍后重试。','err')}).finally(function(){busy(false)})}
   verifyBtn.addEventListener('click',auth);unbindBtn.addEventListener('click',unbind);input.addEventListener('keydown',function(e){if(e.key==='Enter')auth()});noticeClose.addEventListener('click',hideNotice);updateBtn.addEventListener('click',openUpdateUrl);if(announcementBtn)announcementBtn.addEventListener('click',function(){checkUpdate(true)});if(gateAnnouncementBtn)gateAnnouncementBtn.addEventListener('click',function(){setGateAnnouncement('正在检查公告','正在向服务端请求最新公告与版本信息…','loading');checkUpdate(true)});noticeOverlay.addEventListener('click',function(e){if(e.target===noticeOverlay&&!updateState.force)hideNotice()});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!noticeOverlay.hidden&&!updateState.force)hideNotice()});document.body.style.overflow='hidden';
-  if(typeof JSEncrypt==='undefined'||typeof CryptoJS==='undefined'){say('加密组件加载失败。已尝试多个 CDN 源，请检查网络连接后刷新。','err')}else{say('正在复核本设备的授权状态…');checkUpdate(false);recheck().then(function(ok){if(!ok){var saved=localStorage.getItem('miyan_card_key');if(saved)input.value=saved;gate.hidden=false;document.body.style.overflow='hidden';say('请输入卡密完成验证。')}})}
+  var __noCrypto=(typeof JSEncrypt==='undefined'||typeof CryptoJS==='undefined');
+  if(__noCrypto&&!window.__KA28_PUBLIC_CACHED__&&!(window.KA28_PUBLIC&&window.KA28_PUBLIC.isPreview()))say('加密组件加载失败。已尝试多个 CDN 源，请检查网络连接后刷新。','err');
+  bootGate();
 })();
 
 // Casual copy/long-press protection. Inputs and text fields remain editable.

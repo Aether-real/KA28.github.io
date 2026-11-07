@@ -78,8 +78,9 @@
     return [...map.values()].sort((a, b) => Number(a[0]) - Number(b[0])).slice(-1000);
   }
   async function loadHistory() {
-    let rows = Array.isArray(window.KA28_HISTORY) ? window.KA28_HISTORY.slice() : [];
-    S.hist = B.normalize(rows);
+    const rows = Array.isArray(window.KA28_HISTORY) ? window.KA28_HISTORY.slice() : [];
+    const prev = S.hist;
+    if (!prev.length) S.hist = B.normalize(rows);   // 首次离线兜底
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 6000);
@@ -92,7 +93,38 @@
         S.hist = B.normalize(mergeRows(rows, inc));
         S.online = true;
       }
-    } catch (_) { /* 离线快照兜底，静默 */ }
+    } catch (_) {
+      /* 关键：请求失败时保留上一次已合并的历史，不要把数据缩回快照，
+         否则自动刷新会把「记录数变化」误判成新数据而反复全量重绘。 */
+      if (!prev.length) S.hist = B.normalize(rows);
+    }
+  }
+
+  /* ===================== 自动刷新 =====================
+   * 旧实现 60s 轮询只在「最新期号变化」时才重绘，且 S.sheet 打开时直接跳过、
+   * 页面切回来也不刷新，导致开奖历史看起来「不自动刷新」。
+   * 新实现：20s 心跳 + 页面重新可见 / 获得焦点立即同步；带防重入；
+   * 期号或记录数变化即全量重算；半屏面板打开时延后到关闭再重绘，不打断阅读。 */
+  let histBusy = false, pendingRender = false, lastHistSync = 0;
+  function applyHistoryUpdate() {
+    pendingRender = false;
+    autoTune(); recompute(); renderAll();
+  }
+  async function refreshHistory() {
+    if (histBusy || document.hidden || !S.hist.length) return;
+    histBusy = true;
+    try {
+      const beforeId = String(S.hist.at(-1)?.id ?? ''), beforeLen = S.hist.length;
+      await loadHistory();
+      lastHistSync = Date.now();
+      /* 每次心跳都更新可见的同步时间戳，让「自动刷新」有明确反馈；不触发重绘 */
+      const stamp = new Date(lastHistSync).toLocaleTimeString('zh-CN', { hour12: false });
+      $$('[data-k28-sync]').forEach(el => { el.title = '最近自动同步 ' + stamp + ' · 每 20 秒'; });
+      const afterId = String(S.hist.at(-1)?.id ?? '');
+      if (afterId === beforeId && S.hist.length === beforeLen) return;
+      if (S.sheet) { pendingRender = true; return; }
+      applyHistoryUpdate();
+    } finally { histBusy = false; }
   }
 
   /* ===================== 计算 ===================== */
@@ -672,7 +704,7 @@
         <div class="k28-row" style="flex-wrap:wrap">
           <span class="k28-chip is-mint" id="k28RangeChip">区间 ${esc(rLabel)}</span>
           <span class="k28-chip">回测 ${S.bt.meta.tested} 期</span>
-          <span class="k28-chip">${S.online ? '在线 API 已同步' : '离线真实快照'}</span>
+          <span class="k28-chip" data-k28-sync title="自动同步已开启">${S.online ? '在线 API 已同步' : '离线真实快照'}</span>
         </div>
         <div class="k28-segmented k28-mode-seg" id="k28ModeSeg">
           <button data-mode="auto" aria-pressed="${auto}">自动调节</button>
@@ -843,7 +875,7 @@
       <div class="k28-row" style="justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
         <div class="k28-row" style="gap:8px;flex-wrap:wrap">
           <span class="k28-chip is-mint">真实开奖 · 最新 ${t.rows.length} 期</span>
-          <span class="k28-chip">${S.online ? '在线 API 已同步' : '离线真实快照'} · 共 ${S.hist.length} 期</span>
+          <span class="k28-chip" data-k28-sync title="自动同步已开启">${S.online ? '在线 API 已同步' : '离线真实快照'} · 共 ${S.hist.length} 期</span>
         </div>
         <button class="k28-btn" id="k28TrendCompact" aria-pressed="${S.trendCompact}">${S.trendCompact ? '查看完整 13 列' : '切换紧凑视图'}</button>
       </div>
@@ -1016,24 +1048,85 @@
     }
     return html + '</div>';
   }
-  function applySheetState(state, animate = true) {
-    const wrap = $('.k28-sheet-wrap'); if (!wrap) return;
-    const snap = SNAP().find(x => x.state === state) || SNAP()[1];
-    S.sheetState = state;
-    if (!animate) wrap.classList.add('is-dragging');
-    wrap.style.setProperty('--k28-sheet-h', snap.h + 'px');
-    wrap.style.transform = '';
-    if (!animate) requestAnimationFrame(() => wrap.classList.remove('is-dragging'));
-    $$('.k28-sheet-steps button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.state === state)));
-    setTimeout(refreshSquircle, animate ? 30 : 0);
-    requestAnimationFrame(() => setTimeout(refreshSquircle, 430));
+  /* 弹簧引擎句柄：新一次交互先取消上一次，避免两个 rAF 同时写同一元素 */
+  let sheetSpring = null;
+  const SP = () => window.KA28_SPRING;
+  function cancelSheetSpring() { if (sheetSpring) { sheetSpring.cancel(); sheetSpring = null; } }
+  /* 高度钳制在 peek..full，越界部分转成 iOS 橡皮筋位移。
+     拖拽与弹簧收敛共用同一个视觉写入口，保证松手瞬间没有跳变。 */
+  function setSheetVisual(wrap, rawH, lower, upper) {
+    const vh = window.visualViewport?.height || window.innerHeight;
+    const h = Math.max(lower, Math.min(upper, rawH));
+    wrap.style.setProperty('--k28-sheet-h', h.toFixed(2) + 'px');
+    const rb = SP()?.rubberBand;
+    let ty = 0;
+    /* 下边界（dismiss 方向）给足回弹；上边界（全屏顶）只给轻微阻尼，避免底部露空 */
+    if (rawH < lower) ty = rb ? rb(lower - rawH, Math.max(320, vh), .55) : (lower - rawH) * .28;
+    else if (rawH > upper) ty = rb ? -rb(rawH - upper, Math.max(320, vh), .12) : -(rawH - upper) * .08;
+    wrap.style.transform = Math.abs(ty) < .4 ? '' : `translate3d(0,${ty.toFixed(2)}px,0)`;
   }
-  function closeSheet() {
-    const wrap = $('.k28-sheet-wrap'), bd = $('.k28-sheet-backdrop'); if (!wrap) return;
-    wrap.classList.remove('is-open', 'is-dragging', 'is-history'); bd.classList.remove('is-open');
+  function markSnap(state) {
+    S.sheetState = state;
+    $$('.k28-sheet-steps button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.state === state)));
+  }
+  /* state 分档吸附。velocity 是「高度变化速度 px/s」，直接继承手势松手瞬间的动量；
+     dampingRatio=1 临界阻尼，收敛最快且无过冲 / 无振荡（WWDC 2018 Session 803）。 */
+  function applySheetState(state, animate = true, velocity = 0) {
+    const wrap = $('.k28-sheet-wrap'); if (!wrap) return;
+    const snaps = SNAP(), snap = snaps.find(x => x.state === state) || snaps[1];
+    const lower = snaps[0].h, upper = snaps[2].h;
+    cancelSheetSpring();
+    markSnap(state);
+    const cur = wrap.getBoundingClientRect().height;
+    if (!animate || reduced() || !SP()) {
+      wrap.classList.add('is-dragging');
+      setSheetVisual(wrap, snap.h, lower, upper);
+      requestAnimationFrame(() => wrap.classList.remove('is-dragging'));
+      refreshSquircle(); return;
+    }
+    /* rAF 物理引擎独占写入：.is-springing 会禁用 CSS transition */
+    wrap.classList.add('is-springing');
+    sheetSpring = SP().settle({
+      from: cur, to: snap.h, velocity: velocity || 0, dampingRatio: 1, response: .42,
+      onUpdate: x => setSheetVisual(wrap, x, lower, upper),
+      onComplete: () => {
+        wrap.classList.remove('is-springing'); sheetSpring = null;
+        wrap.style.transform = ''; refreshSquircle();
+      }
+    });
+    setTimeout(refreshSquircle, 60);
+  }
+  /* 关闭：整块面板带松手速度滑出屏幕。手势向下甩时 vH<0，转成正向初速，
+     弹簧 ζ=1 把位移收敛到「面板高度 + 余量」，无回弹振荡但保留动量感。 */
+  function closeSheet(velocity = 0) {
+    const wrap = $('.k28-sheet-wrap'), bd = $('.k28-sheet-backdrop');
+    if (!wrap || wrap.hidden) return;
+    cancelSheetSpring();
+    const mt = /translate3d\([^,]+,\s*([-\d.]+)px/.exec(wrap.style.transform || '');
+    const fromY = mt ? parseFloat(mt[1]) : 0;
+    const dist = wrap.getBoundingClientRect().height || 420;
+    wrap.classList.remove('is-open', 'is-dragging', 'is-history');
+    if (bd) bd.classList.remove('is-open');
+    wrap.classList.add('is-springing');
     document.body.classList.remove('k28-sheet-open');
     const ex = $('#k28HistoryExpand'); if (ex) ex.setAttribute('aria-expanded', 'false');
-    setTimeout(() => { if (!wrap.classList.contains('is-open')) { wrap.hidden = true; bd.hidden = true; S.sheet = null; } }, 430);
+    let done = false;
+    const finish = () => {
+      if (done) return; done = true;
+      if (sheetSpring) { sheetSpring.cancel(); sheetSpring = null; }
+      if (!wrap.classList.contains('is-open')) { wrap.hidden = true; if (bd) bd.hidden = true; S.sheet = null; }
+      wrap.classList.remove('is-springing'); wrap.style.transform = '';
+      /* 面板打开期间来了新开奖：关闭后再补一次重绘，不打断用户阅读 */
+      if (pendingRender) applyHistoryUpdate();
+    };
+    if (reduced() || !SP()) { finish(); return; }
+    const v0 = Math.max(0, -(velocity || 0)) + 180;
+    sheetSpring = SP().settle({
+      from: fromY, to: dist + 28, velocity: v0, dampingRatio: 1, response: .36,
+      onUpdate: x => { wrap.style.transform = `translate3d(0,${x.toFixed(2)}px,0)`; },
+      onComplete: finish
+    });
+    setTimeout(finish, 760);
   }
   function initSheetGestures() {
     const wrap = $('.k28-sheet-wrap'); if (!wrap) return;
@@ -1041,7 +1134,12 @@
     let drag = null, frame = 0;
     const start = e => {
       if (e.button === 2 || (e.target.closest('button') && !e.target.closest('.k28-sheet-grab'))) return;
-      drag = { id: e.pointerId, y: e.clientY, t: performance.now(), h: wrap.getBoundingClientRect().height, state: S.sheetState };
+      const now = performance.now();
+      cancelSheetSpring();
+      drag = {
+        id: e.pointerId, y: e.clientY, t: now, h: wrap.getBoundingClientRect().height,
+        state: S.sheetState, latest: e.clientY, samples: [{ y: e.clientY, t: now }]
+      };
       wrap.classList.add('is-dragging');
       targets.forEach(t => { try { t.setPointerCapture(e.pointerId); } catch (_) { } });
       if (e.cancelable) e.preventDefault();
@@ -1049,35 +1147,45 @@
     const move = e => {
       if (!drag || e.pointerId !== drag.id) return;
       if (e.cancelable) e.preventDefault();
+      const now = performance.now();
       drag.latest = e.clientY;
+      /* 保留最后 90ms 的采样，用于计算「松手瞬间」速度而不是整段手势平均速度 */
+      drag.samples.push({ y: e.clientY, t: now });
+      while (drag.samples.length > 2 && now - drag.samples[0].t > 90) drag.samples.shift();
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0; if (!drag) return;
-        const snaps = SNAP(), lower = snaps[0].h, upper = snaps[2].h;
-        const delta = drag.latest - drag.y, raw = drag.h - delta;
-        let h = raw, ty = 0;
-        // 阻尼：越界后位移按 0.28 / 0.08 衰减（橡皮筋物理）
-        if (raw < lower) { h = lower; ty = Math.min(132, (lower - raw) * 0.28); }
-        else if (raw > upper) { h = upper; ty = -Math.min(10, (raw - upper) * 0.08); }
-        wrap.style.setProperty('--k28-sheet-h', h + 'px');
-        wrap.style.transform = `translate3d(0,${ty.toFixed(1)}px,0)`;
+        const snaps = SNAP();
+        const raw = drag.h - (drag.latest - drag.y);
+        setSheetVisual(wrap, raw, snaps[0].h, snaps[2].h);
       });
     };
     const end = (e, cancelled) => {
       if (!drag || (!cancelled && e.pointerId !== drag.id)) return;
       if (frame) cancelAnimationFrame(frame), frame = 0;
       const d = drag; drag = null;
+      const now = performance.now();
       const delta = cancelled ? 0 : (e.clientY ?? d.latest ?? d.y) - d.y;
-      const elapsed = Math.max(1, performance.now() - d.t), vel = cancelled ? 0 : delta / elapsed;
+      /* 真实松手速度 px/s：取最后 90ms 位移斜率；停顿超过 120ms 视为零速（不甩动） */
+      let vFinger = 0;
+      const ss = d.samples || [], a = ss[0], b = ss[ss.length - 1];
+      if (!cancelled && a && b && b.t > a.t && now - b.t < 120) vFinger = (b.y - a.y) / (b.t - a.t) * 1000;
+      const vH = -vFinger;   // 高度变化速度：向上甩为正（展开），向下甩为负（收起/关闭）
       const desired = cancelled ? d.h : d.h - delta;
       const snaps = SNAP();
-      let idx = snaps.reduce((best, s, i) => Math.abs(s.h - desired) < Math.abs(snaps[best].h - desired) ? i : best, 0);
+      /* 动量投影：用松手速度预估落点，决定吸附到哪一档，而不是只看手指停在哪 */
+      const projected = cancelled ? desired : desired + (SP()?.project?.(vH) || 0);
+      let idx = snaps.reduce((best, s, i) => Math.abs(s.h - projected) < Math.abs(snaps[best].h - projected) ? i : best, 0);
       const startIdx = Math.max(0, snaps.findIndex(x => x.state === d.state));
-      if (!cancelled && Math.abs(delta) > 18 && vel < -0.42) idx = Math.max(idx, Math.min(2, startIdx + 1));
-      else if (!cancelled && Math.abs(delta) > 18 && vel > 0.42) idx = Math.min(idx, Math.max(0, startIdx - 1));
-      if (!cancelled && d.state === 'peek' && delta > 118) { closeSheet(); return; }
+      /* 快速甩动至少跨一档（沿速度方向），慢速拖动则按投影落点就近吸附 */
+      if (!cancelled && Math.abs(vH) > 520) {
+        if (vH > 0) idx = Math.max(idx, Math.min(2, startIdx + 1));
+        else idx = Math.min(idx, Math.max(0, startIdx - 1));
+      }
       wrap.classList.remove('is-dragging');
-      applySheetState(snaps[idx].state, true);
+      /* peek 档继续下拉 / 快速向下甩 → 带速度关闭 */
+      if (!cancelled && d.state === 'peek' && (delta > 118 || vH < -900)) { closeSheet(vH); return; }
+      applySheetState(snaps[idx].state, true, cancelled ? 0 : vH);
     };
     targets.forEach(t => {
       t.addEventListener('pointerdown', start, { passive: false });
@@ -1749,15 +1857,19 @@
       if (e.key === 'Escape' && S.sheet) { closeSheet(); return; }
     });
   }
-  function toast(msg) {
+  /* 全站统一走 iOS 顶部通知横幅（app.js 的 window.KA28Toast）。
+     原 #k28Toast 固定在底部 Dock 上方，用户反馈「太挡位置」，此处不再创建。 */
+  function toast(msg, opts) {
+    if (typeof window.KA28Toast === 'function') { window.KA28Toast(msg, opts); return; }
+    /* 兜底：app.js 尚未就绪时，仍给一个顶部居中的轻量提示，不遮挡底栏 */
     let el = $('#k28Toast');
     if (!el) {
       el = document.createElement('div'); el.id = 'k28Toast';
-      el.style.cssText = 'position:fixed;left:50%;bottom:calc(var(--k28-tabbar-h) + 84px);transform:translate(-50%,12px);z-index:900;padding:10px 16px;border-radius:12px;background:var(--k28-surface-2);border:0.5px solid var(--k28-line);box-shadow:0 12px 30px rgb(0 0 0 / 30%);font-size:12.5px;opacity:0;transition:all .3s var(--k28-ease);pointer-events:none;color:var(--k28-ink)';
+      el.style.cssText = 'position:fixed;top:max(12px,env(safe-area-inset-top,0px));left:50%;transform:translate(-50%,-12px);z-index:1400;padding:10px 16px;border-radius:18px;background:var(--k28-surface-2);border:0.5px solid var(--k28-line);box-shadow:0 12px 30px rgb(0 0 0 / 30%);font-size:12.5px;opacity:0;transition:all .4s var(--k28-spring);pointer-events:none;color:var(--k28-ink);max-width:min(392px,calc(100vw - 32px))';
       document.body.appendChild(el);
     }
     el.textContent = msg; el.style.opacity = '1'; el.style.transform = 'translate(-50%,0)';
-    clearTimeout(el._t); el._t = setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translate(-50%,12px)'; }, 2600);
+    clearTimeout(el._t); el._t = setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translate(-50%,-12px)'; }, 2600);
   }
 
   /* 导出按钮旁的主题标签：随 html/body[data-theme] 实时变化，提示导出图会跟随配色 */
@@ -1797,13 +1909,10 @@
     S.busy = false;
     // 短暂保留骨架，展示 105° 扫光与 data-hold 防闪机制，再揭示真实内容
     setTimeout(() => { renderAll(); refreshSquircle(); }, reduced() ? 0 : 420);
-    // 定期在线刷新（不打断交互）
-    setInterval(async () => {
-      if (document.hidden || S.sheet) return;
-      const before = S.hist.at(-1)?.id;
-      await loadHistory();
-      if (S.hist.at(-1)?.id !== before) { autoTune(); recompute(); renderAll(); }
-    }, 60000);
+    // 自动刷新：20s 心跳 + 页面重新可见 / 获得焦点时立即同步
+    setInterval(() => { refreshHistory(); }, 20000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshHistory(); });
+    window.addEventListener('focus', () => refreshHistory());
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();

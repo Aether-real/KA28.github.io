@@ -23,8 +23,13 @@
   --k28-r-control: 14px;
   --k28-hair: 0.5px;
   --k28-tabbar-h: 76px;
-  --k28-ease: cubic-bezier(.22, .8, .28, 1);
-  --k28-spring: cubic-bezier(.32, 1.42, .44, 1);
+  /* WWDC 2018 Session 803 临界阻尼（dampingRatio = 1）：无过冲、无振荡。
+     基础值是无过冲回退；ka28-spring.js 在支持 linear() 的浏览器里用
+     f(t)=1-(1+ωt)e^(-ωt) 采样出的精确临界阻尼曲线覆盖这三个变量。 */
+  --k28-ease: cubic-bezier(.22, .68, .24, 1);
+  --k28-spring: cubic-bezier(.22, .68, .24, 1);
+  --k28-spring-quick: cubic-bezier(.22, .68, .24, 1);
+  --k28-spring-soft: cubic-bezier(.22, .68, .24, 1);
   --k28-mint: var(--mint, #c6ed72);
   --k28-blue: #6aa9e0;
   --k28-red: #e0685f;
@@ -995,4 +1000,150 @@ body.k28-sheet-open .k28-tabbar {
 }
 @media (prefers-reduced-motion: reduce) {
   .k28-lb-more { transition-duration: 1ms !important; }
+}
+
+/* =============================================================================
+ * 20. WWDC 2018「Designing Fluid Interfaces」临界阻尼弹簧 · 全站接入
+ *   dampingRatio = 1（无过冲）+ initialVelocity（继承松手速度）+ rubber band 回弹
+ *   JS 引擎 ka28-spring.js 在支持 CSS linear() 时用精确解覆盖下面三个变量；
+ *   不支持时回退到同形状的无过冲 cubic-bezier，观感一致、不会过冲。
+ * ========================================================================== */
+/* 20.1 入场 / 交错 / 翻牌 / tab 弹跳：全部改用临界阻尼曲线 */
+.k28-page,
+.k28-stagger > *,
+.k28-card-in,
+.k28-leader-list .k28-lb-row,
+.k28-concl,
+.k28-real-card,
+.k28-hit-cell { animation-timing-function: var(--k28-spring-soft); }
+.k28-num-flip,
+.k28-tab[aria-selected="true"] .k28-tab-ico,
+.k28-theme-orb .theme-icon { animation-timing-function: var(--k28-spring-quick); }
+
+/* 20.2 主题切换：圆形揭开改临界阻尼，避免旧 ease 的"缓慢拖尾" */
+::view-transition-new(root) { animation: k28CircleReveal 560ms var(--k28-spring-soft) both; }
+.k28-vt-fallback { animation: k28FallbackReveal 520ms var(--k28-spring-soft) forwards; }
+button#themeBtn.k28-theme-orb {
+  transition: transform 460ms var(--k28-spring-quick), background 260ms var(--k28-ease), box-shadow 260ms var(--k28-ease);
+}
+button#themeBtn.k28-theme-orb:hover { transform: translateY(-3px) rotate(-14deg); }
+button#themeBtn.k28-theme-orb:active { transform: scale(.9); }
+button#themeBtn.k28-theme-orb.is-switching .theme-icon { animation: k28ThemeIconPop 480ms var(--k28-spring-quick) both; }
+@keyframes k28ThemeIconPop { 0% { transform: rotate(-40deg) scale(.7); opacity: .4; } 100% { transform: none; opacity: 1; } }
+
+/* 20.3 半屏面板：弹簧接管时的状态（关闭 CSS transition，交给 rAF 物理引擎） */
+.k28-sheet-wrap { transition: transform 460ms var(--k28-spring-soft), height 460ms var(--k28-spring-soft); }
+.k28-sheet-wrap.is-dragging { transition: none !important; }
+/* 弹簧期：高度仍走 CSS 临界阻尼曲线，位移交给 rAF 物理引擎（禁 transform 过渡避免打架） */
+/* 弹簧态由 rAF 物理引擎逐帧写入 height / transform：
+   必须完全禁用 CSS transition，否则每帧的样式变更会再叠一层过渡，
+   导致收敛滞后、丢失临界阻尼 ζ=1 的无过冲特性。 */
+.k28-sheet-wrap.is-springing { transition: none !important; will-change: transform, height; }
+.k28-sheet-backdrop { transition: opacity 420ms var(--k28-spring-soft); }
+.k28-sheet-grab::after { transition: width 360ms var(--k28-spring-quick), opacity 220ms var(--k28-ease); }
+.k28-sheet-wrap.is-dragging .k28-sheet-grab::after { width: 54px; opacity: .85; }
+
+/* 20.4 全局按压 / 高光：临界阻尼回弹 */
+.k28-tabbar-ink { transition: transform 460ms var(--k28-spring); }
+.k28-tab-ico svg { transition: transform 380ms var(--k28-spring-quick), opacity 220ms var(--k28-ease); }
+.k28-chev, .k28-history-expand-ico { transition: transform 420ms var(--k28-spring); }
+.k28-lb-row, .k28-sheet-steps button, .k28-btn, .k28-segmented button {
+  transition: transform 320ms var(--k28-spring-quick), background 220ms var(--k28-ease),
+              border-color 220ms var(--k28-ease), box-shadow 220ms var(--k28-ease);
+}
+
+/* 20.5 骨架屏揭示：内容用临界阻尼淡入 + 8px 位移，避免硬切 */
+.k28-reveal { animation: k28Reveal 480ms var(--k28-spring-soft) both; }
+@keyframes k28Reveal { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
+.k28-sk { will-change: transform; }
+
+/* =============================================================================
+ * 21. iOS 通知横幅：替代原「左下角大横条」toast
+ *   灵动岛 / 通知中心风格：顶部居中、毛玻璃、连续曲率、图标 + 标题 + 正文 + 时间，
+ *   临界阻尼从上方落下，2.6s 自动收起，完全不遮挡底部 Dock 与内容。
+ * ========================================================================== */
+body.ka28-redesign #toast {
+  top: max(12px, env(safe-area-inset-top, 0px));
+  bottom: auto; left: 0; right: 0;
+  margin: 0 auto; width: max-content;
+  max-width: min(392px, calc(100vw - 32px));
+  min-height: 56px;
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 14px 9px 9px;
+  border: var(--k28-hair) solid color-mix(in srgb, var(--k28-ink) 13%, transparent);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--k28-surface) 84%, transparent);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  backdrop-filter: blur(26px) saturate(185%);
+  box-shadow: 0 16px 42px rgb(0 0 0 / 28%), inset 0 1px 0 rgb(255 255 255 / 9%);
+  color: var(--k28-ink); font-size: 12px; line-height: 1.4;
+  opacity: 0; transform: translate3d(0, -150%, 0) scale(.94);
+  transition: transform 540ms var(--k28-spring), opacity 240ms var(--k28-ease);
+  pointer-events: none; z-index: 1400;
+}
+body.ka28-redesign #toast.show { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+@supports (corner-shape: squircle) { body.ka28-redesign #toast { corner-shape: squircle; border-radius: 22px; } }
+#toast .k28-t-ico {
+  flex: 0 0 auto; width: 38px; height: 38px; border-radius: 12px;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--k28-mint) 18%, transparent);
+  color: var(--k28-mint);
+  border: var(--k28-hair) solid color-mix(in srgb, var(--k28-mint) 34%, transparent);
+}
+#toast .k28-t-ico svg { width: 20px; height: 20px; }
+#toast .k28-t-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+#toast .k28-t-copy b { font-size: 12.5px; font-weight: 680; letter-spacing: .01em; }
+#toast .k28-t-copy small {
+  font-size: 11px; color: var(--k28-muted); line-height: 1.45;
+  overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+#toast .k28-t-time { margin-left: 6px; align-self: flex-start; padding-top: 3px; font-size: 10px; color: var(--k28-muted); white-space: nowrap; }
+@media (max-width: 420px) {
+  body.ka28-redesign #toast { max-width: calc(100vw - 24px); }
+  #toast .k28-t-time { display: none; }
+}
+/* 语义配色：警示用红、提示音用蓝、咪牌用薄荷、普通信息用灰 */
+#toast.is-warn .k28-t-ico { background: color-mix(in srgb, var(--k28-red) 18%, transparent); color: var(--k28-red); border-color: color-mix(in srgb, var(--k28-red) 34%, transparent); }
+#toast.is-bell .k28-t-ico { background: color-mix(in srgb, var(--k28-blue) 18%, transparent); color: var(--k28-blue); border-color: color-mix(in srgb, var(--k28-blue) 34%, transparent); }
+#toast.is-info .k28-t-ico { background: color-mix(in srgb, var(--k28-ink) 9%, transparent); color: var(--k28-ink); border-color: color-mix(in srgb, var(--k28-ink) 16%, transparent); }
+/* 骨架屏 / 减少动态效果偏好下，通知直接出现，不做 540ms 落下 */
+@media (prefers-reduced-motion: reduce) {
+  body.ka28-redesign #toast { transition: opacity 120ms linear; }
+}
+
+/* =============================================================================
+ * 22. 视觉对齐 + 流畅性
+ * ========================================================================== */
+.k28-pages { padding-inline: var(--k28-gutter); }
+.k28-card { contain: layout style; }               /* 缩小重排范围，不裁切阴影 */
+.k28-tabbar { will-change: transform; }
+/* 长列表里的行做离屏跳过渲染，滚动更顺；contain-intrinsic-size 防止滚动条跳动 */
+.k28-sheet-body .k28-real-card,
+.k28-hist-cards .k28-real-card { content-visibility: auto; contain-intrinsic-size: auto 220px; }
+/* 骨架屏阶段冻结扫光，揭示时统一恢复 */
+.k28-root[data-k28-loading="1"] { pointer-events: none; }
+.k28-root[data-k28-loading="1"] .k28-sk::after { animation-play-state: running; }
+/* 统一卡片标题层级（四页对齐） */
+.k28-head { margin-bottom: 16px; }
+.k28-title { font-size: clamp(16px, 2vw, 20px); line-height: 1.3; }
+.k28-sub { font-size: 12.5px; }
+/* 预测页：综合四格 hover 微抬 + 排行榜行弹簧按压 */
+.k28-consensus-grid .k28-concl { transition: transform 360ms var(--k28-spring-quick), box-shadow 260ms var(--k28-ease); }
+@media (hover: hover) {
+  .k28-consensus-grid .k28-concl:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgb(0 0 0 / 12%); }
+  .k28-lb-row:hover { transform: translateY(-1px); }
+}
+.k28-lb-row:active { transform: scale(.995); }
+/* 数据状态条（在线 / 更新时间 / 手动刷新） */
+.k28-live-bar {
+  display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+  margin-bottom: 12px; font-size: 11.5px; color: var(--k28-muted);
+}
+.k28-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--k28-mint); box-shadow: 0 0 8px var(--k28-mint); }
+.k28-live-dot.is-off { background: var(--k28-muted); box-shadow: none; }
+.k28-live-bar button { margin-left: auto; }
+@media (prefers-reduced-motion: reduce) {
+  .k28-reveal, .k28-page, .k28-stagger > *, .k28-card-in { animation: none !important; }
+  body.ka28-redesign #toast, .k28-sheet-wrap, .k28-lb-row, .k28-btn { transition-duration: 1ms !important; }
 }

@@ -508,7 +508,36 @@ function setStatus(text,type='ok'){
   if(status){status.title=detail;status.setAttribute('aria-label','API 状态：'+detail);status.classList.toggle('is-ok',type==='ok');status.classList.toggle('is-warn',type==='warn');status.classList.toggle('is-error',type==='err')}
   if(dot)dot.className='dot'+(type==='warn'?' warn':type==='err'?' err':'');
 }
-let toastTimer=0;function toast(msg){const e=$('#toast');e.textContent=String(msg);e.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove('show'),3100)}
+/* iOS 通知横幅：顶部居中、毛玻璃、图标 + 标题 + 正文 + 时间。
+   取代原先固定在左下角的大横条，不再遮挡悬浮 Dock 与页面内容。
+   兼容旧调用 toast('文本')，同时支持 toast('文本',{title,tone,duration})。 */
+const TOAST_ICONS={
+  ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
+  spark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/><path d="m19 16 .7 1.8L21.5 18.5l-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7L19 16Z"/></svg>',
+  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>'
+};
+let toastTimer=0;
+function toast(msg,opts){
+  const e=$('#toast');if(!e)return;
+  const text=String(msg??''),o=(opts&&typeof opts==='object')?opts:{};
+  const bad=/失败|暂不可用|错误|无法|未成功|超时/.test(text);
+  const sound=/提示音/.test(text),scratch=/咪牌|刮奖|刮开/.test(text);
+  const draw=/开奖|同步|区间|切换|已恢复|自动调节|已开启|已关闭|已更新/.test(text);
+  const tone=o.tone||(bad?'warn':sound?'bell':scratch?'spark':draw?'ok':'info');
+  const title=o.title||(bad?'同步未完成':sound?'提示音':scratch?'咪牌刮奖':draw?'开奖已同步':'KA28 提示');
+  e.className='toast'+(tone?' is-'+tone:'');
+  e.innerHTML='<span class="k28-t-ico">'+(TOAST_ICONS[tone]||TOAST_ICONS.info)+'</span>'+
+    '<span class="k28-t-copy"><b></b><small></small></span><span class="k28-t-time">现在</span>';
+  e.querySelector('.k28-t-copy b').textContent=title;
+  e.querySelector('.k28-t-copy small').textContent=text;
+  e.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>e.classList.remove('show'),o.duration||2800);
+}
+/* 供 ka28-app.js 复用同一套 iOS 通知，避免两套提示同时出现在底部互相遮挡 */
+window.KA28Toast=toast;
 async function getJSON(path,timeout=9000){const ctrl=new AbortController();const tid=setTimeout(()=>ctrl.abort(),timeout);try{const res=await fetch(API+path,{signal:ctrl.signal,headers:{Accept:'application/json'},cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);const j=await res.json();if(j?.ok===false)throw new Error(j.error?.message||'API 返回错误');return j}finally{clearTimeout(tid)}}
 function getDrawFromLatest(j){return j?.data?.draw??j?.data?.item??null}
 function setCountdown(j){const c=j?.data?.countdown;const sec=Number(c?.seconds);const at=Number(c?.next_draw_at);state.countdownSeconds=Number.isFinite(sec)&&sec>=0?sec:null;state.nextDrawAt=Number.isFinite(at)&&at>1e12?at:(state.countdownSeconds===null?null:Date.now()+state.countdownSeconds*1000)}
@@ -1360,8 +1389,12 @@ function renderTick(){renderCountdown()}
 async function boot(){setDataReady(false);initAlgorithmSwipe();setActiveForecastAlgorithm('goblin',false);const savedTheme=safeGet('ka28.lab.theme')||'light';setTheme(savedTheme);restoreCache();if(state.records.length){state.latest=state.records[state.records.length-1];renderDraw();renderAnalytics();setDataReady(true);setStatus('显示缓存数据 · 正在联网校准','warn')}const tasks=await Promise.allSettled([fetchLatest({silent:true}),fetchHistory({quiet:true})]);if(!state.latest&&state.records.length)state.latest=state.records[state.records.length-1];renderDraw();renderAnalytics();renderCountdown();setDataReady(true);
   setInterval(()=>{if(!document.hidden)renderTick()},1000);
   setInterval(()=>{if(!document.hidden)fetchLatest({silent:true})},3000);
-  setInterval(()=>{if(!document.hidden&&(!state.historyLoaded||state.records.length<30||state.historyError))fetchHistory({quiet:true})},30000);
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)return;renderCountdown();fetchLatest({silent:true});if(!state.historyLoaded||state.records.length<30||state.historyError)fetchHistory({quiet:true})});
+  /* 开奖历史自动刷新：原来只在「未加载 / 记录不足 / 出错」时才拉历史，
+     数据齐了之后几乎不再刷新，用户会感觉历史页不自动更新。
+     改为 2 分钟兜底心跳 + 页面重新可见时无条件安静重取（内部有签名去重，无变化不重绘）。 */
+  let lastHistoryPing=0;
+  setInterval(()=>{if(!document.hidden&&(!state.historyLoaded||state.records.length<30||state.historyError||Date.now()-lastHistoryPing>120000)){lastHistoryPing=Date.now();fetchHistory({quiet:true})}},30000);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)return;renderCountdown();fetchLatest({silent:true});lastHistoryPing=Date.now();fetchHistory({quiet:true})});
   $('#refreshBtn').addEventListener('click',async()=>{const btn=$('#refreshBtn');btn.classList.add('is-syncing');try{await fetchLatest();await fetchHistory({quiet:true});renderAnalytics(true)}finally{setTimeout(()=>btn.classList.remove('is-syncing'),180)}});$('#windowSelect').addEventListener('change',()=>{killModelCacheKey='';renderAnalytics()});$('#algoRankToggle').addEventListener('click',()=>{algoRankExpanded=!algoRankExpanded;const hist=currentRecords().slice(-windowN());renderAlgoLeaderboard(hist,sourceVoteModel(hist));if(!algoRankExpanded)$('#algoRankTitle')?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})});$('#algoLeaderboard').addEventListener('click',e=>{const row=e.target.closest('button[data-algo-id]');if(!row)return;const id=row.dataset.algoId;selectedAlgoIds.clear();selectedAlgoIds.add(id);document.querySelectorAll('#algoLeaderboard [data-algo-id]').forEach(item=>{const active=item.dataset.algoId===id;item.classList.toggle('is-active',active);item.setAttribute('aria-pressed',String(active))});renderAlgoSheet()});$('#algoSheetBody').addEventListener('change',e=>{if(e.target.id==='sheetRangeBacktest')applyRangeTuning(false)});$('#algoSheetBody').addEventListener('click',e=>{if(e.target.closest('#sheetAutoRangeBtn'))applyRangeTuning(true)});$('#closeAlgoSheet').addEventListener('click',()=>closeAlgoSheet(true));$('#clearAlgoSelection').addEventListener('click',()=>closeAlgoSheet(true));$('#algoSheetBackdrop').addEventListener('click',()=>closeAlgoSheet(true));$('#recentRecordsOpenBtn').addEventListener('click',()=>renderRecentSheet(true));$('#forecastMoreBtn').addEventListener('click',openForecastHistory);$('#forecastCountSelect').addEventListener('change',()=>{rollingForecastCacheKey='';renderForecastRounds()});$('#drawHistoryCountSelect').addEventListener('change',()=>renderRecent(currentRecords()));const sheetDragTargets=[$('.sheet-grabber'),$('.sheet-head')].filter(Boolean);
 let sheetDrag=null,sheetDragFrame=0;
 const getSheetSnapPoints=()=>{
