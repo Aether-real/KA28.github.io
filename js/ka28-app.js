@@ -66,7 +66,7 @@
   /* 总榜维度：all=综合，其余按四类命中口径重排（切换带交错动画） */
   const UDIMS = ['all', 'kill', 'dual', 'three', 'sum'];
   const ULABEL = { all: '综合', kill: '杀组', dual: '双组', three: '三门', sum: '和值' };
-  /* 整合规模：算法池 87 + 原站 49 公式 + 2 融合模型 = 138 */
+  /* 整合规模：算法池 87 + 原站 49 公式 + 2 融合共识算法 = 138（全部同源逐期回测） */
   const LEGACY_FORMULAS = 49, LEGACY_FUSION = 2;
   const TOTAL_ALGOS = A.ALGOS.length + LEGACY_FORMULAS + LEGACY_FUSION;
 
@@ -117,9 +117,9 @@
   }
 
   /* ===================== 统一排行榜 + 总榜前三统计 =====================
-   * 原站 app.js 整体包在 IIFE 内，49 公式函数无法从外部调用；因此原站 49 公式
-   * 采用它自己渲染出的「公示命中率」并入总榜（真实数据，非估算），2 个融合模型
-   * 用总榜前三逐期回测的真实命中率作为公示值。所有条目共用一个榜单、一个口径。 */
+   * 原站 app.js 的 49 公式已由 __KA28_LEGACY_PACK__ 只读暴露并接入同源逐期回测；
+   * 本函数只作为 pack 尚未就绪时的公示口径回退。融合共识行由 buildFusionRows
+   * 独立生成（真实逐期回测），不再从这里读取任何占位数据。 */
   function ensureLegacyExpanded() {
     const lb = $('#algoLeaderboard'); if (!lb) return;
     if (!lb.classList.contains('is-expanded') && $$('.algo-leader-row', lb).length < 49) {
@@ -147,17 +147,7 @@
         rates: { all: rate, kill: rate, dual: rate, three: rate, sum: rate }
       });
     });
-    const fRate = [fusion?.dual ?? 0.5, fusion?.kill ?? 0.75];
-    ['融合模型 · 区间共识', '融合模型 · 杀组投票'].forEach((name, i) => {
-      const edge = fRate[i] - (i ? 0.75 : 0.5);
-      rows.push({
-        id: 'F' + (i + 1), name, displaySrc: '融合模型',
-        formula: '沿用原站投票层，与 49 个公式共同构成整合算法池',
-        rate: fRate[i], hit: 0, tested: 20, kind: 'fusion', pred: null, origin: 'legacy',
-        scores: { all: edge, kill: edge, dual: edge, three: edge, sum: edge },
-        rates: { all: fRate[i], kill: fRate[i], dual: fRate[i], three: fRate[i], sum: fRate[i] }
-      });
-    });
+    /* 融合共识已改为独立的真实回测算法（buildFusionRows），不再从这里生成占位行 */
     return rows;
   }
 
@@ -181,12 +171,21 @@
     if (m) return `${short} · 算法 ${String(m[1]).padStart(2, '0')}`;
     return nm ? `${short} · ${nm}` : `原站公式 ${String(i + 1).padStart(2, '0')}`;
   }
-  /* KA28 正序 hist（末位最新）→ 原站倒序格式（h[0] 最新） */
+  /* KA28 正序 hist（末位最新）→ 原站倒序格式（h[0] 最新）。
+     融合层每期会对 49 个公式重复传入同一份 prior，按「长度 + 末期号」缓存转换结果，
+     避免 49×60 次重复映射 120 行历史；公式函数按原站约定不修改输入，缓存安全。 */
+  const LEGACY_HIST_CACHE = new Map();
   function toLegacyHist(rows) {
-    return rows.slice().reverse().map(r => ({
+    const key = rows.length + '|' + (rows.at(-1)?.id ?? '');
+    const cached = LEGACY_HIST_CACHE.get(key);
+    if (cached) return cached;
+    const out = rows.slice().reverse().map(r => ({
       expect: String(r.id), nums: (r.nums || []).slice(), sum: r.sum,
       type: A.typeA(r.sum), time: r.time || '', opentime: null
     }));
+    if (LEGACY_HIST_CACHE.size > 256) LEGACY_HIST_CACHE.clear();
+    LEGACY_HIST_CACHE.set(key, out);
+    return out;
   }
   /* 单个原站公式的当期四类预测：kill 为原生输出，dual/three/sums 用统一派生层补齐 */
   function legacyPredict(algo, prior, ctx) {
@@ -272,24 +271,127 @@
     });
     return { rows, ready: true };
   }
-  /* 2 个融合模型：保留投票层口径入榜，但不重复计入前三投票（避免自引用放大） */
-  function makeFusionRows(fusionRate) {
-    const fRate = [fusionRate?.dual ?? 0.5, fusionRate?.kill ?? 0.75];
-    return ['融合共识 · 区间模型', '融合共识 · 杀组投票'].map((name, i) => {
-      const base = i ? 0.75 : 0.5, edge = fRate[i] - base;
+  /* ===================== 2 个融合共识算法：真实逐期回测 =====================
+   * 旧实现是占位行：命中率直接取「总榜前三投票的回测成绩」，hit/tested 写死 0/20，
+   * pred 为空、评分是「命中率−基线」的另一套量纲 —— 既自引用又自相矛盾。
+   * 现在把融合定义成两个只依赖「开奖前历史」的元算法：对固定候选池
+   * （87 个新算法 + 已就绪的原站公式）逐期投票得出四类输出，再用与
+   * B.backtest / buildLegacyRows 逐字同源的口径逐期核对命中并评分。
+   *   F1 全池等权：池内每个算法 1 票
+   *   F2 择优池加权：每期只用「截至上一期」累计杀组命中率排名前 35% 的算法，
+   *      再按该命中率加权投票（walk-forward，不偷看未来），因此输出与 F1 有真实差异
+   * 候选池不含融合行自身，因此不存在自引用；两行可正常进入总榜前三与综合输出。 */
+  const FUSION_META = [
+    { id: 'F1', key: 'equal', name: '融合共识 · 全池等权', desc: '全部候选算法各 1 票，四类输出各取票数最高' },
+    { id: 'F2', key: 'weighted', name: '融合共识 · 择优加权', desc: '每期只用历史表现前 35% 的算法，再按命中率加权投票' }
+  ];
+  /* 缓存：历史/窗口/区间/公式就绪状态不变时复用逐期池预测，避免每次交互重算 */
+  let FUSION_CACHE = { key: '', rows: null, weightsByPeriod: [], lastWeights: null, lastIndices: null, byPriorId: null };
+  /* 融合预测：回测循环传入已算好的池预测与权重/择优池索引复用；外部调用现场计算 */
+  function fusionPredict(key, prior, ctx, cached) {
+    const pool = S.fusionPool || [];
+    if (!pool.length) return null;
+    const preds = cached?.preds || pool.map(r => { try { return predictRow(r, prior, ctx); } catch (_) { return null; } });
+    let weights = null, indices = null;
+    if (key === 'weighted') {
+      /* 外部调用（详情 / 逐期回测）按 prior 末期号取该期对应的历史权重与择优池，
+         避免用「最新表现」回看历史期造成未来数据泄漏 */
+      const snap = cached ? null : FUSION_CACHE.byPriorId?.get(String(prior.at(-1)?.id));
+      indices = cached?.indices ?? snap?.indices ?? FUSION_CACHE.lastIndices;
+      const raw = cached?.weights ?? snap?.weights ?? FUSION_CACHE.lastWeights;
+      weights = indices && raw ? indices.map(i => raw[i]) : raw;
+    }
+    const use = indices ? indices.map(i => preds[i]) : preds;
+    const cons = voteFromPreds(use, weights);
+    const out = A.derive({
+      kill: cons.kill, dual: cons.dual, three: cons.three, sums: cons.sums,
+      detail: `对 ${use.length} 个算法逐期投票 · ${key === 'weighted' ? '择优池表现加权' : '全池等权多数票'}`
+    }, prior, ctx);
+    out.origin = { kill: 'fusion', dual: 'fusion', three: 'fusion', sums: 'fusion' };
+    return out;
+  }
+  function buildFusionRows(pool, ctx) {
+    const n = S.hist.length, win = Math.min(S.window, 120);
+    const start = Math.max(30, n - win);
+    const recentFrom = n - Math.min(30, Math.max(10, Math.floor(win / 2)));
+    const range = effectiveRange();
+    const key = [n, S.hist.at(-1)?.id, S.window, range?.min, range?.max, legacyPack() ? 1 : 0].join('|');
+    S.fusionPool = pool;
+    if (FUSION_CACHE.key === key && FUSION_CACHE.rows) return FUSION_CACHE.rows;
+
+    const dims = ['kill', 'dual', 'three', 'sum'];
+    const acc = FUSION_META.map(() => Object.fromEntries(dims.map(d => [d, { hit: 0, tested: 0, recentHit: 0, recentTested: 0 }])));
+    const roll = pool.map(() => ({ hit: 0, tested: 0 }));
+    const weightsByPeriod = [], byPriorId = new Map();
+    let lastWeights = null, lastIndices = null;
+    const perfOf = a => 0.25 + 1.5 * (a.tested ? (a.hit + 0.75 * 4) / (a.tested + 4) : 0.75);
+    const topIndices = w => w.map((v, i) => ({ v, i })).sort((a, b) => b.v - a.v || a.i - b.i)
+      .slice(0, Math.max(12, Math.round(pool.length * 0.35))).map(x => x.i);
+    for (let i = start; i < n; i++) {
+      const prior = S.hist.slice(Math.max(0, i - 120), i);
+      if (prior.length < 12) continue;
+      const preds = pool.map(r => { try { return predictRow(r, prior, ctx); } catch (_) { return null; } });
+      /* 本期权重 / 择优池只用截至上一期的累计表现，严格 walk-forward */
+      const w = roll.map(perfOf), topIdx = topIndices(w);
+      weightsByPeriod.push(w); lastWeights = w; lastIndices = topIdx;
+      byPriorId.set(String(prior.at(-1)?.id), { weights: w, indices: topIdx });
+      const actual = S.hist[i];
+      FUSION_META.forEach((m, k) => {
+        const c = fusionPredict(m.key, prior, ctx, {
+          preds, weights: m.key === 'weighted' ? w : null,
+          indices: m.key === 'weighted' ? topIdx : null
+        });
+        dims.forEach(d => {
+          const h = c ? B.hitOf(c, actual, d) : null;
+          if (h === null) return;
+          const st = acc[k][d];
+          st.tested++; st.hit += h;
+          if (i >= recentFrom) { st.recentTested++; st.recentHit += h; }
+        });
+      });
+      /* 用本期真实开奖更新累计表现，供下一期加权使用 */
+      preds.forEach((p, k2) => {
+        const h = p ? B.hitOf(p, actual, 'kill') : null;
+        if (h !== null) { roll[k2].tested++; roll[k2].hit += h; }
+      });
+    }
+    /* 本期（下一期）预测用完整历史重新跑一次池投票 */
+    const fullPrior = S.hist;
+    const fullPreds = pool.map(r => { try { return predictRow(r, fullPrior, ctx); } catch (_) { return null; } });
+    const nowWeights = roll.map(perfOf), nowIndices = topIndices(nowWeights);
+    FUSION_CACHE = { key, rows: null, weightsByPeriod, lastWeights: nowWeights, lastIndices: nowIndices, byPriorId };
+    const rows = FUSION_META.map((m, k) => {
+      const scores = {}, rates = {}, dimStats = {};
+      dims.forEach(d => {
+        const st = legacyScore(acc[k][d], B.BASELINE[d]);
+        dimStats[d] = st; scores[d] = st.score; rates[d] = st.rate;
+      });
+      scores.all = dims.reduce((s, d) => s + scores[d], 0) / 4;
+      rates.all = dims.reduce((s, d) => s + rates[d], 0) / 4;
+      let pred = null;
+      try { pred = fusionPredict(m.key, fullPrior, ctx, {
+        preds: fullPreds, weights: m.key === 'weighted' ? nowWeights : null,
+        indices: m.key === 'weighted' ? nowIndices : null
+      }); } catch (_) { }
+      const s0 = dimStats.kill;
       return {
-        id: 'F' + (i + 1), name, displaySrc: '融合投票层', family: '融合层',
-        formula: '原站投票层汇总输出，不重复计入前三投票', kind: 'fusion',
-        pred: null, algo: null, scores: { all: edge, kill: edge, dual: edge, three: edge, sum: edge },
-        rates: { all: fRate[i], kill: fRate[i], dual: fRate[i], three: fRate[i], sum: fRate[i] },
-        rate: fRate[i], edge, hit: 0, tested: 20, origin: 'legacy', dimStats: {}
+        id: m.id, name: m.name, displaySrc: '融合共识层', family: '融合层',
+        formula: m.desc, kind: 'fusion', fusionKey: m.key, algo: null, legacyAlgo: null,
+        scores, rates, dimStats, pred,
+        hit: s0.hit, tested: s0.tested, rate: rates.all, edge: scores.all,
+        smooth: s0.smooth, recentRate: s0.recentRate,
+        reliability: s0.reliability, stability: s0.stability,
+        origin: 'fusion'
       };
     });
+    FUSION_CACHE.rows = rows;
+    return rows;
   }
-  /* 逐期回测统一入口：新算法走 A.predict，原站公式走原始 fn + 派生层 */
+  /* 逐期回测统一入口：新算法走 A.predict，原站公式走原始 fn，融合共识走池投票 */
   function predictRow(r, prior, ctx) {
     if (r.kind === 'new') { try { return A.predict(r.algo, prior, ctx); } catch (_) { return null; } }
     if (r.kind === 'legacy') { try { return legacyPredict(r.legacyAlgo, prior, ctx); } catch (_) { return null; } }
+    if (r.kind === 'fusion') { try { return fusionPredict(r.fusionKey, prior, ctx); } catch (_) { return null; } }
     return null;
   }
   /* pack 由 loader 异步注入；就绪后重算总榜与综合输出 */
@@ -386,18 +488,16 @@
     ensureLegacyExpanded();
     const lr = buildLegacyRows({ kill: 0.75, dual: 0.5 });
     const base = news.concat(lr.rows);
-    // 总榜前三从「所有可输出预测的算法」里选：原站公式进前三即可参与四类综合输出
-    const top3 = base.filter(r => r.pred)
+    // 2 个融合共识算法：对 base 逐期投票，同源回测后可正常进前三
+    const fusions = buildFusionRows(base, ctx);
+    const rows = base.concat(fusions);
+    // 总榜前三从「所有可输出预测的算法」里选：原站公式与融合共识均可参与四类综合输出
+    const top3 = rows.filter(r => r.pred)
       .slice().sort((a, b) => b.scores.all - a.scores.all || b.tested - a.tested)
       .slice(0, Math.max(1, S.topN));
     const cons = voteFromPreds(top3.map(r => r.pred), voteWeights(top3));
     cons.top3 = top3;
     const stats = periodBacktest(top3, Math.max(20, S.realCount));
-    const fusionRate = {
-      kill: stats.count ? stats.hits.kill / stats.count : 0.75,
-      dual: stats.count ? stats.hits.dual / stats.count : 0.5
-    };
-    const rows = base.concat(makeFusionRows(fusionRate));
     const byDim = {};
     UDIMS.forEach(d => {
       byDim[d] = rows.slice().sort((a, b) => {
@@ -406,8 +506,8 @@
       }).map((r, i) => Object.assign({}, r, { rank: i + 1, dim: d }));
     });
     return {
-      rows, byDim, cons, stats, top3, fusionRate,
-      legacyCount: lr.rows.length + 2, total: rows.length,
+      rows, byDim, cons, stats, top3,
+      legacyCount: lr.rows.length + fusions.length, total: rows.length,
       legacyReady: lr.ready, legacyRanked: lr.rows.filter(r => r.pred).length
     };
   }
@@ -524,15 +624,17 @@
     const u = S.unified; if (!u) return '';
     const c = u.cons, range = effectiveRange();
     const rLabel = range ? `${range.min.toFixed(2)} ~ ${range.max.toFixed(2)}` : '自动寻优';
-    const src = u.top3.map((r, i) => `${i + 1}. ${esc(r.name)}${r.kind === 'legacy' ? ' · 原站公式' : ''}`).join('　·　');
+    const src = u.top3.map((r, i) => `${i + 1}. ${esc(r.name)}${r.kind === 'legacy' ? ' · 原站公式' : r.kind === 'fusion' ? ' · 融合共识' : ''}`).join('　·　');
     const legacyInTop = u.top3.filter(r => r.kind === 'legacy').length;
+    const fusionInTop = u.top3.filter(r => r.kind === 'fusion').length;
+    const extraTop = [legacyInTop ? '原站公式' : '', fusionInTop ? '融合共识' : ''].filter(Boolean).join(' / ');
     const auto = S.mode === 'auto';
     const votePct = (obj, key) => c.wsum ? Math.round(100 * (obj[key] || 0) / c.wsum) : 0;
     return `
       <div class="k28-concl-head">
         <div><div class="k28-kicker">CONSENSUS · TOP ${S.topN}</div>
           <h4 class="k28-concl-head-title">综合预测 · 四类输出</h4></div>
-        <span class="k28-chip is-mint">${u.top3.length} 个算法投票${legacyInTop ? ` · 含 ${legacyInTop} 个原站公式` : ''}</span>
+        <span class="k28-chip is-mint">${u.top3.length} 个算法投票${legacyInTop ? ` · 含 ${legacyInTop} 个原站公式` : ''}${fusionInTop ? ` · 含 ${fusionInTop} 个融合共识` : ''}</span>
       </div>
       <div class="k28-consensus-grid is-four k28-stagger">
         <div class="k28-concl is-lead" style="--k28-i:0">
@@ -562,7 +664,7 @@
         <b style="color:var(--k28-mint)">${c.confidence}%</b>
       </div>
       <div class="k28-src-line">
-        <span class="k28-concl-label">综合统计来源 · 统一排行榜前 ${S.topN}${legacyInTop ? '（含原站公式）' : ''}</span>
+        <span class="k28-concl-label">综合统计来源 · 统一排行榜前 ${S.topN}${extraTop ? `（含${extraTop}）` : ''}</span>
         <span class="k28-src-names">${src}</span>
       </div>
       <hr class="k28-hair"/>
@@ -657,7 +759,7 @@
     return `
       <div class="k28-board-stat">
         <span class="k28-chip is-mint">整合 ${u.total} 个算法</span>
-        <span class="k28-chip">新系统 ${A.ALGOS.length} · 原站 ${u.legacyCount - 2} 公式 · 2 融合模型</span>
+        <span class="k28-chip">新系统 ${A.ALGOS.length} · 原站 ${u.legacyCount - 2} 公式 · 2 融合共识</span>
         <span class="k28-chip">回测 ${S.bt.meta.tested} 期</span>
         ${base != null ? `<span class="k28-chip">基线 ${pct(base)}</span>` : '<span class="k28-chip">四维综合评分</span>'}
         <span class="k28-chip">${u.legacyReady ? '原站公式同源回测' : '原站公式公示口径'}</span>
@@ -677,7 +779,7 @@
               : dim === 'dual' ? (r.pred.dual || []).join('/')
                 : dim === 'three' ? (r.pred.three || []).join('/')
                   : (r.pred.sums || []).map(n => String(n).padStart(2, '0')).join('/');
-        } else { val = r.kind === 'fusion' ? '融合层输出' : '样本不足'; }
+        } else { val = '样本不足'; }
         /* 统一同源口径：删除原先的「公式 / 计算路线 / 来源口径」副标题行 */
         const sample = `${r.hit}/${r.tested} 次命中 · 评分 ${score.toFixed(3)} · ${esc(val)}`;
         return `<button class="k28-lb-row k28-leader-row ${isTop ? 'is-top' : ''}" style="--k28-i:${i}" data-algo="${esc(r.id)}" data-dim="${dim}" aria-label="打开 ${esc(r.name)} 详情">
@@ -694,7 +796,7 @@
         </button>`;
       }).join('')}</div>
       ${list.length > 5 ? `<button class="k28-btn k28-lb-more" id="k28BoardMore" aria-expanded="${expanded}">${expanded ? '收起 · 仅看前 5 ↑' : `展开查看全部 ${list.length} 个算法 ↓`}</button>` : ''}
-      <p class="k28-sheet-note" style="margin-top:11px">全部 ${u.total} 个算法按同一套逐期回测口径排名：平滑命中率相对理论基线的超额 + 近期稳定性 + 样本可信度。原站 49 公式已接入公式原始函数做同源回测，进入总榜前 ${S.topN} 即参与综合输出；2 个融合模型仅入榜展示，不重复计入前三投票。点击任一算法查看详情，再点一次可收起。</p>
+      <p class="k28-sheet-note" style="margin-top:11px">全部 ${u.total} 个算法按同一套逐期回测口径排名：平滑命中率相对理论基线的超额 + 近期稳定性 + 样本可信度。原站 49 公式接入公式原始函数、2 个融合共识（全池等权 / 择优加权）对候选池逐期投票，均与新算法同源回测；进入总榜前 ${S.topN} 即参与综合输出。点击任一算法查看详情，再点一次可收起。</p>
     `;
   }
 
@@ -826,25 +928,7 @@
       if (!r) return '<p class="k28-sheet-note">数据尚未就绪。</p>';
       const rank = r.rank || ((u.byDim[item.dim] || []).findIndex(x => x.id === item.id) + 1);
       const meta = B.DIM_META[dim];
-      if (r.kind === 'fusion') {
-        return `
-        <div class="k28-sheet-section">
-          <div class="k28-row" style="justify-content:space-between">
-            <div><div class="k28-kicker">统一排行榜 · #${rank} · ${esc(ULABEL[item.dim] || '综合')}</div>
-            <h3 class="k28-title" style="margin-top:5px">${esc(r.name)}</h3></div>
-            <span class="k28-chip is-mint">融合层口径</span>
-          </div>
-          <p class="k28-sub">${esc(r.formula)}</p>
-        </div>
-        <div class="k28-sheet-section"><h4>投票层数据</h4>
-          <div class="k28-sheet-metrics">
-            <div class="k28-sheet-metric"><span>公示命中率</span><b>${pct(r.rate)}</b></div>
-            <div class="k28-sheet-metric"><span>数据来源</span><b style="font-size:13px">${esc(r.displaySrc)}</b></div>
-            <div class="k28-sheet-metric"><span>是否参与前三</span><b>否</b></div>
-            <div class="k28-sheet-metric"><span>说明</span><b style="font-size:12px">避免自引用放大</b></div>
-          </div></div>
-        <p class="k28-sheet-note">融合模型是原站投票层的汇总结果，仅入榜展示排名，不重复计入总榜前三投票。</p>`;
-      }
+      /* 融合共识行与其他算法共用同一套详情（真实命中 / 样本 / 四类预测 / 逐期明细） */
       const p = r.pred;
       const bd = S.boards?.[dim]?.rows.find(x => x.id === item.id);
       const st = r.dimStats?.[dim];
@@ -859,9 +943,9 @@
           <div class="k28-row" style="justify-content:space-between">
             <div><div class="k28-kicker">${esc(meta.label)} · 排名 #${rank}</div>
             <h3 class="k28-title" style="margin-top:5px">${esc(r.name)}</h3></div>
-            <span class="k28-chip is-mint">${esc(r.origin === 'native' ? '原生输出' : '派生参考')}</span>
+            <span class="k28-chip is-mint">${esc(r.kind === 'fusion' ? '融合共识 · 真实回测' : r.origin === 'native' ? '原生输出' : '派生参考')}</span>
           </div>
-          <p class="k28-sub">算法分类：${esc(r.displaySrc || meta.label)}</p>
+          <p class="k28-sub">${esc(r.kind === 'fusion' ? r.formula : '算法分类：' + (r.displaySrc || meta.label))}</p>
         </div>
         <div class="k28-sheet-section">
           <h4>逐期回测 · ${esc(meta.unit)}</h4>
@@ -1041,13 +1125,13 @@
       <div class="k28-head">
         <div><div class="k28-kicker">KA28 · CANADA 28 PREDICTION SYSTEM</div>
           <h3 class="k28-title">加拿大28预测系统 · 综合输出</h3>
-          <p class="k28-sub">整合 ${TOTAL_ALGOS} 个算法（含 49 公式 + 2 融合模型）· 由统一排行榜前三自动统计杀组 / 双组 / 三门 / 和值</p></div>
+          <p class="k28-sub">整合 ${TOTAL_ALGOS} 个算法（含 49 公式 + 2 融合共识）· 全部同源逐期回测 · 由统一排行榜前三自动统计杀组 / 双组 / 三门 / 和值</p></div>
         <span class="k28-chip is-mint">综合输出 + 统一排行榜</span>
       </div>
       <div id="k28ConsensusBody"></div>`;
     pages.predict.insertBefore(consensus, pages.predict.firstChild);
 
-    // 预测页：统一排行榜（新系统 87 + 原站 49 公式 + 2 融合模型），沿用原站 49 公式榜布局
+    // 预测页：统一排行榜（新系统 87 + 原站 49 公式 + 2 融合共识），沿用原站 49 公式榜布局
     const boards = document.createElement('section');
     boards.className = 'k28-card k28-root'; boards.id = 'k28Boards';
     boards.innerHTML = `<div class="k28-head"><div><div class="k28-kicker">UNIFIED LEADERBOARD · ROLLING BACKTEST</div>
@@ -1060,8 +1144,8 @@
       <div id="k28LegacyBoardSlot" class="k28-legacy-slot" aria-hidden="true"></div>`;
     pages.predict.appendChild(boards);
 
-    // 原站 49 公式榜：DOM 移入隐藏槽位，仅用于读取其公示命中率并入统一总榜；
-    // 原站 app.js 仍照常渲染，既有功能不受影响。
+    // 原站 49 公式榜：DOM 移入隐藏槽位，仅供 pack 未就绪时回退公示口径与同步改名；
+    // 正常路径已走同源逐期回测。原站 app.js 仍照常渲染，既有功能不受影响。
     const legacyPanel = $('.algo-rank-panel'), legacySlot = $('#k28LegacyBoardSlot');
     if (legacyPanel && legacySlot) legacySlot.appendChild(legacyPanel);
 
@@ -1207,7 +1291,7 @@
       if (src && src.textContent !== label) src.textContent = label;
     });
     const tag = $('#algoVotesTag');
-    if (tag) tag.textContent = `${LEGACY_FORMULAS} 个公式 + ${LEGACY_FUSION} 个融合模型 · 已整合 ${TOTAL_ALGOS} 个算法`;
+    if (tag) tag.textContent = `${LEGACY_FORMULAS} 个公式 + ${LEGACY_FUSION} 个融合共识 · 已整合 ${TOTAL_ALGOS} 个算法`;
     // 原站榜由 app.js 异步渲染，默认只有前三；补齐到 49 行后重算统一总榜
     if (rows.length !== lastLegacyCount) {
       lastLegacyCount = rows.length;
