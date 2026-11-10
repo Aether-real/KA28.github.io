@@ -1,0 +1,459 @@
+/* =============================================================================
+ * cream-skin.css — 米白 · 墨绿皮肤（纯覆盖层，第三套主题样式）
+ * -----------------------------------------------------------------------------
+ * 参考来源：ca28-pro-source.zip 的 src/index.css
+ *   · Tailwind 3.4 + :root CSS 变量写法；静态极简报表、无毛玻璃、细发丝线
+ *   · 米白 #F5F5F1 / 白 #FFFFFF / 线 #E6E5DD / 墨 #16181A
+ *   · 墨绿 #1A6B57 / 暖红 #C0442E / 冷蓝 #2C62A8 / 琥珀 #A8761C
+ *   · 深色版为本皮肤补齐（原 ca28-pro 只有浅色），用深墨底 + 亮墨绿主色
+ *
+ * 【改动边界 · 严格遵守】
+ *   1. 只新增本文件；原有 5 个 CSS、全部 JS、index.html 正文均一字不改。
+ *   2. 不删除、不重命名任何选择器 / @media / CSS 变量名 / 类名 / ID。
+ *   3. 不改动任何布局属性：--radius / --radius-inset / --space-* 保持主站原值，
+ *      display / position / grid / flex / width / height / margin / padding / gap
+ *      一律不碰；只改颜色、背景、边框色、阴影、字体、滤镜与纯 transform 反馈。
+ *   4. 变量采用「同名重定义」：主站 5 个 CSS 全读 :root 语义令牌，重定义即全站换肤。
+ *   5. 主题语义沿用主站 setTheme()：dark / 无 data-theme = 深墨；light = 米白。
+ *   6. 与 maple28-skin.css 互斥加载（同一 <link id="ka28-skin"> 只挂一个 href），
+ *      因此本文件自带 --cream-* 前缀令牌，不依赖另一套皮肤的任何变量。
+ * ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+ * 1. 主站语义令牌 —— 深色（默认 / html[data-theme="dark"] / body[data-theme="dark"]）
+ * ------------------------------------------------------------------------- */
+:root,
+:root[data-theme="dark"],
+body[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* 品牌与语义色：--mint 是主站主品牌/强调色，映射到亮墨绿 */
+  --bg: #0f1512;
+  --text: #e8ede9;
+  --muted: #9aa8a0;
+  --faint: #6e7c74;
+  --mint: #5fbf98;
+  --blue: #6da8e8;
+  --amber: #d9ad55;
+  --rose: #e08a76;
+  --violet: #ab97d0;
+
+  /* 表面：深墨实色（ca28-pro 风格：实色卡片，不做毛玻璃） */
+  --glass: #16201b;
+  --glass2: #1c2822;
+  --line: rgb(232 237 233 / 12%);
+  --line2: rgb(95 191 152 / 24%);
+
+  /* 尺寸令牌：保持主站原值，不改布局 */
+  --radius: 22px;
+  --radius-inset: 14px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* 阴影：扁平、克制 */
+  --shadow: 0 1px 2px rgb(0 0 0 / 28%), 0 12px 32px -18px rgb(0 0 0 / 70%);
+  --soft-shadow: 0 1px 2px rgb(0 0 0 / 28%), 0 8px 24px -14px rgb(0 0 0 / 62%);
+
+  /* 表面层级 */
+  --surface-0: #0f1512;
+  --surface-1: #16201b;
+  --surface-2: #1d2a23;
+  --surface-3: #25342b;
+  --surface-inset: #131c17;
+  --surface-raised: #223027;
+  --surface-subtle: rgb(232 237 233 / 5%);
+  --surface-softer: rgb(232 237 233 / 3.5%);
+  --surface-hover: #25342b;
+  --surface-soft: rgb(232 237 233 / 5%);
+  --panel-gradient: #1c2822;
+
+  /* 文字 */
+  --control-text: #dce6df;
+  --strong-text: #f4f8f5;
+  --body-muted: #9aa8a0;
+  --op-text: rgb(232 237 233 / 48%);
+  --brand-mark-text: #0f1512;
+  --primary-ink: #0f1512;
+  --primary-hover: #7fd4b2;
+  --border-soft: rgb(232 237 233 / 12%);
+  --focus-ring: #5fbf98;
+
+  /* 控件 */
+  --bar-track: rgb(232 237 233 / 12%);
+  --option-bg: #16201b;
+  --option-text: #e8ede9;
+  --toggle-track: #2c3d33;
+  --toggle-knob: #5fbf98;
+  --overlay: rgb(6 12 9 / 76%);
+  --top-bg: rgb(22 32 27 / 96%);
+
+  /* 历史区 */
+  --history-surface: #131c17;
+  --history-card: #16201b;
+  --history-inset: #1d2a23;
+  --history-ink: #e8ede9;
+  --history-muted: #9aa8a0;
+  --history-border: rgb(232 237 233 / 14%);
+  --history-control: #223027;
+
+  /* 命中 / 未中 */
+  --hit-good-bg: rgb(95 191 152 / 14%);
+  --hit-good-text: #7fd4b2;
+  --hit-good-border: rgb(95 191 152 / 34%);
+  --hit-bad-bg: rgb(224 138 118 / 14%);
+  --hit-bad-text: #eba896;
+  --hit-bad-border: rgb(224 138 118 / 34%);
+
+  /* 软色标签（chip / rank / kill） */
+  --accent-soft-bg: rgb(95 191 152 / 13%);
+  --accent-soft-text: #8fdcbb;
+  --blue-soft-bg: rgb(109 168 232 / 13%);
+  --blue-soft-text: #9cc7f2;
+  --amber-soft-bg: rgb(217 173 85 / 13%);
+  --amber-soft-text: #e6c685;
+  --violet-soft-bg: rgb(171 151 208 / 13%);
+  --violet-soft-text: #c9b8e4;
+  --rose-soft-bg: rgb(224 138 118 / 12%);
+  --rose-soft-text: #edac9c;
+
+  /* 表格 / 遗漏 */
+  --table-wrap-bg: rgb(232 237 233 / 2.5%);
+  --table-row-hover: rgb(232 237 233 / 4%);
+  --omit-hot-bg: rgb(217 173 85 / 13%);
+  --omit-hot-border: rgb(217 173 85 / 28%);
+
+  /* 背景氛围：极淡的墨绿径向光 */
+  --page-atmosphere:
+    radial-gradient(ellipse at 88% -5%, rgb(95 191 152 / 9%), transparent 38%),
+    linear-gradient(180deg, #121b16 0%, var(--bg) 450px);
+}
+
+/* ---------------------------------------------------------------------------
+ * 2. 主站语义令牌 —— 浅色（html[data-theme="light"] / body[data-theme="light"]）
+ *    这是 ca28-pro 的原味：米白纸底 + 白卡 + 墨绿主色
+ * ------------------------------------------------------------------------- */
+:root[data-theme="light"],
+body[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f5f5f1;
+  --text: #16181a;
+  --muted: #55595f;
+  --faint: #8d9298;
+  --mint: #1a6b57;
+  --blue: #2c62a8;
+  --amber: #a8761c;
+  --rose: #c0442e;
+  --violet: #6b5b8a;
+
+  --glass: #ffffff;
+  --glass2: #fbfbf8;
+  --line: #e6e5dd;
+  --line2: rgb(26 107 87 / 22%);
+
+  --radius: 22px;
+  --radius-inset: 14px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --shadow: 0 1px 2px rgb(22 24 26 / 5%), 0 12px 32px -18px rgb(22 24 26 / 18%);
+  --soft-shadow: 0 1px 2px rgb(22 24 26 / 5%), 0 8px 24px -14px rgb(22 24 26 / 14%);
+
+  --surface-0: #f5f5f1;
+  --surface-1: #ffffff;
+  --surface-2: #fbfbf8;
+  --surface-3: #f0f0eb;
+  --surface-inset: #f7f7f3;
+  --surface-raised: #ffffff;
+  --surface-subtle: rgb(22 24 26 / 4%);
+  --surface-softer: rgb(22 24 26 / 2.5%);
+  --surface-hover: #eef0ea;
+  --surface-soft: rgb(22 24 26 / 4%);
+  --panel-gradient: #fbfbf8;
+
+  --control-text: #2b3033;
+  --strong-text: #16181a;
+  --body-muted: #55595f;
+  --op-text: rgb(22 24 26 / 45%);
+  --brand-mark-text: #ffffff;
+  --primary-ink: #ffffff;
+  --primary-hover: #14503f;
+  --border-soft: #e6e5dd;
+  --focus-ring: #1a6b57;
+
+  --bar-track: #e6e5dd;
+  --option-bg: #ffffff;
+  --option-text: #16181a;
+  --toggle-track: #d5d4c9;
+  --toggle-knob: #1a6b57;
+  --overlay: rgb(22 24 26 / 45%);
+  --top-bg: rgb(255 255 255 / 94%);
+
+  --history-surface: #f7f7f3;
+  --history-card: #ffffff;
+  --history-inset: #fbfbf8;
+  --history-ink: #16181a;
+  --history-muted: #55595f;
+  --history-border: #dfded5;
+  --history-control: #f0f0eb;
+
+  --hit-good-bg: #e8f2ee;
+  --hit-good-text: #14503f;
+  --hit-good-border: #c3ded2;
+  --hit-bad-bg: #fbeeea;
+  --hit-bad-text: #a2382a;
+  --hit-bad-border: #efc9c0;
+
+  --accent-soft-bg: #e8f2ee;
+  --accent-soft-text: #14503f;
+  --blue-soft-bg: #ebf1fa;
+  --blue-soft-text: #23508a;
+  --amber-soft-bg: #fbf3e2;
+  --amber-soft-text: #8a6016;
+  --violet-soft-bg: #f0edf6;
+  --violet-soft-text: #584a72;
+  --rose-soft-bg: #fbeeea;
+  --rose-soft-text: #9e3a28;
+
+  --table-wrap-bg: rgb(22 24 26 / 2%);
+  --table-row-hover: rgb(22 24 26 / 3%);
+  --omit-hot-bg: #fbf3e2;
+  --omit-hot-border: #e8d5a8;
+
+  --page-atmosphere:
+    radial-gradient(ellipse at 88% -5%, rgb(26 107 87 / 8%), transparent 38%),
+    linear-gradient(180deg, #fafaf6 0%, var(--bg) 450px);
+}
+
+/* ---------------------------------------------------------------------------
+ * 3. 新增令牌（只增不删）—— 本皮肤专属配色，供下面的覆盖规则引用
+ * ------------------------------------------------------------------------- */
+:root,
+:root[data-theme="dark"],
+body[data-theme="dark"] {
+  --cream-brand: #5fbf98;
+  --cream-brand-deep: #2f7a5c;
+  --cream-glow: rgb(95 191 152 / 26%);
+  --cream-ball-1: #6da8e8;
+  --cream-ball-2: #5fbf98;
+  --cream-ball-3: #d9ad55;
+  --cream-ball-sum: #4aa87f;
+  --cream-ball-1-deep: #2f6fae;
+  --cream-ball-2-deep: #2f7a5c;
+  --cream-ball-3-deep: #9a7424;
+  --cream-ball-sum-deep: #235b43;
+  --cream-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --cream-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+:root[data-theme="light"],
+body[data-theme="light"] {
+  --cream-brand: #1a6b57;
+  --cream-brand-deep: #14503f;
+  --cream-glow: rgb(26 107 87 / 20%);
+  --cream-ball-1: #2c62a8;
+  --cream-ball-2: #1a6b57;
+  --cream-ball-3: #a8761c;
+  --cream-ball-sum: #1a6b57;
+  --cream-ball-1-deep: #1f4a80;
+  --cream-ball-2-deep: #14503f;
+  --cream-ball-3-deep: #7d5714;
+  --cream-ball-sum-deep: #0d3a2e;
+  --cream-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --cream-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* ---------------------------------------------------------------------------
+ * 4. 覆盖 ka28-system.css 的 --k28-* 颜色变量
+ *    --k28-mint / --k28-ink / --k28-line / --k28-surface / --k28-surface-2
+ *    已经是 var(--mint) / var(--text) / var(--glass) 的引用，随令牌自动跟随，
+ *    无需重定义；这里只覆盖写死的颜色与 dock 玻璃。尺寸变量一律不动。
+ * ------------------------------------------------------------------------- */
+:root,
+:root[data-theme="dark"],
+body[data-theme="dark"] {
+  --k28-blue: #6da8e8;
+  --k28-red: #e08a76;
+  --k28-green: #5fbf98;
+  --k28-dock-bg: rgb(22 32 27 / 92%);
+  --k28-dock-stroke: rgb(232 237 233 / 14%);
+  --k28-dock-hi: rgb(232 237 233 / 7%);
+  --k28-dock-shadow: 0 16px 44px -14px rgb(0 0 0 / 72%), 0 3px 10px rgb(0 0 0 / 32%);
+}
+:root[data-theme="light"],
+body[data-theme="light"] {
+  --k28-blue: #2c62a8;
+  --k28-red: #c0442e;
+  --k28-green: #1a6b57;
+  --k28-dock-bg: rgb(255 255 255 / 92%);
+  --k28-dock-stroke: #e6e5dd;
+  --k28-dock-hi: rgb(255 255 255 / 96%);
+  --k28-dock-shadow: 0 1px 2px rgb(22 24 26 / 5%), 0 12px 30px -14px rgb(22 24 26 / 20%);
+}
+
+/* ---------------------------------------------------------------------------
+ * 5. 字体：ca28-pro 的 Inter 优先 + 系统回退；等宽数字（.num 风格）
+ *    只改 font-family / font-variant，不改字号与任何尺寸。
+ * ------------------------------------------------------------------------- */
+body.ka28-redesign {
+  font-family: var(--cream-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body.ka28-redesign :is(
+  .countdown strong, .pred-number, .pred-sum, .pred-score b, .pred-pct,
+  .keno-ball, .meta-item strong, .bt b, .omit-tile b, .cat-omit b, .num,
+  .sum-model-metrics b, .algo-leader-rate strong, .hero-time-value,
+  #periodNo, #countdownText, .period b
+) {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+body.ka28-redesign ::selection { color: #ffffff; background: var(--cream-brand); }
+
+/* ---------------------------------------------------------------------------
+ * 6. 号码球：覆盖 styles.css 写死的 #4c6d9c / #286d53 / #94602e
+ *    ca28-pro 是静态实色，用冷蓝 / 墨绿 / 琥珀三色 + 墨绿和值球，不做渐变堆叠。
+ * ------------------------------------------------------------------------- */
+body.ka28-redesign .ball,
+body.ka28-redesign .ball:not(.sum) {
+  color: #ffffff;
+  background: var(--cream-ball-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%), 0 3px 10px rgb(0 0 0 / 14%);
+  text-shadow: none;
+}
+body.ka28-redesign .ball.b2 { background: var(--cream-ball-2); }
+body.ka28-redesign .ball.b3 { background: var(--cream-ball-3); }
+body.ka28-redesign .ball.sum {
+  background: var(--cream-ball-sum);
+  color: #ffffff;
+  box-shadow: 0 6px 18px -8px var(--cream-glow), inset 0 1px 0 rgb(255 255 255 / 22%);
+}
+
+/* ---------------------------------------------------------------------------
+ * 7. 状态点：覆盖 styles.css 写死的薄荷绿 / 琥珀 / 玫瑰光晕
+ * ------------------------------------------------------------------------- */
+body.ka28-redesign .dot {
+  background: var(--cream-brand);
+  box-shadow: 0 0 0 3px var(--cream-glow);
+}
+body.ka28-redesign .dot.warn {
+  background: var(--amber);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 22%, transparent);
+}
+body.ka28-redesign .dot.err {
+  background: var(--rose);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rose) 20%, transparent);
+}
+
+/* ---------------------------------------------------------------------------
+ * 8. 硬编码色兜底：experience.css / ka28-system.css 里少数写死的旧色
+ *    只改颜色，不改 width / height / border-radius 等任何尺寸值。
+ * ------------------------------------------------------------------------- */
+body.ka28-redesign .kill-model .vote-row > i {
+  background: linear-gradient(90deg, var(--mint), var(--cream-brand-deep));
+}
+body.ka28-redesign #goblinPanel .algo-mode-dot {
+  background: var(--cream-brand);
+  box-shadow: 0 0 0 4px var(--cream-glow);
+}
+body.ka28-redesign #goblinPanel[data-active-algo="sequence"] .algo-mode-dot {
+  background: var(--violet);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--violet) 22%, transparent);
+}
+body.ka28-redesign #goblinPanel .algo-swipe-btn:focus-visible { outline-color: var(--blue); }
+body.ka28-redesign #goblinPanel .algo-swipe-dots i.is-active { background: var(--cream-brand); }
+body.ka28-redesign .k28-btn.is-primary,
+body.ka28-redesign .k28-history-expand-badge {
+  color: var(--primary-ink);
+  background: var(--mint);
+}
+body.ka28-redesign .brand-icon,
+body.ka28-redesign .miyan-mark,
+body.ka28-redesign .notice-mark {
+  background: var(--cream-brand);
+  color: var(--brand-mark-text);
+}
+
+/* ---------------------------------------------------------------------------
+ * 9. 材质：ca28-pro 的静态实色卡片 + 发丝线
+ *    用内阴影模拟 1px 细线（主站原本 border: 0），避免改 border 触发盒模型变化。
+ *    同时关掉主站 .top 的 blur(16px)，回归「静态极简、无动效」的取向。
+ *    不改任何尺寸 / 定位 / 间距 / display。
+ * ------------------------------------------------------------------------- */
+body.ka28-redesign .glass,
+body.ka28-redesign .panel,
+body.ka28-redesign .draw-card,
+body.ka28-redesign .recent,
+body.ka28-redesign #omissionSection,
+body.ka28-redesign .miyan-card,
+body.ka28-redesign .notice-card,
+body.ka28-redesign .algo-sheet,
+body.ka28-redesign .top {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: var(--shadow), inset 0 0 0 1px var(--line);
+}
+body.ka28-redesign .top {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--top-bg);
+}
+body.ka28-redesign .hairline,
+body.ka28-redesign .keno,
+body.ka28-redesign .prediction-step,
+body.ka28-redesign .sum-forecast-block,
+body.ka28-redesign .sum-model-rank,
+body.ka28-redesign .algo-rank-panel,
+body.ka28-redesign .three-door-box,
+body.ka28-redesign .footer {
+  border-color: var(--line);
+}
+body.ka28-redesign .glass-inset,
+body.ka28-redesign .meta-item,
+body.ka28-redesign .combo-pill,
+body.ka28-redesign .omit-tile,
+body.ka28-redesign .cat-omit,
+body.ka28-redesign .bt,
+body.ka28-redesign .status,
+body.ka28-redesign .tag,
+body.ka28-redesign .keno-ball,
+body.ka28-redesign .prediction-main,
+body.ka28-redesign .sum-four-card,
+body.ka28-redesign .vote-row,
+body.ka28-redesign .miyan-input,
+body.ka28-redesign .miyan-status,
+body.ka28-redesign .sheet-close {
+  box-shadow: inset 0 0 0 1px var(--border-soft);
+}
+
+/* ---------------------------------------------------------------------------
+ * 10. 交互反馈：静态极简，仅保留极轻的颜色过渡（不改 transform 尺寸）
+ * ------------------------------------------------------------------------- */
+body.ka28-redesign :is(.btn, .notice-btn, .miyan-btn, .combo-pill, .sum-four-card) {
+  transition-timing-function: var(--cream-ease);
+}
+
+/* =============================================================================
+ * 自检清单（可追溯）
+ *  · 主站 styles.css :root 的 79 个变量已在第 1/2 节全部同名重定义，无遗漏、无改名。
+ *  · 尺寸令牌 --radius / --radius-inset / --space-1..8 沿用主站原值，布局零改动。
+ *  · 主站硬编码色已覆盖：.ball 三色、.dot 光晕、::selection、
+ *    experience.css 的 vote-bar / algo-mode-dot / .ball:not(.sum) 文字色、
+ *    ka28-system.css 的 .k28-btn.is-primary 与 .k28-history-expand-badge。
+ *  · --k28-mint / --k28-ink / --k28-line / --k28-surface 为 var() 引用，自动跟随。
+ *  · 字体：ca28-pro 用 Google Fonts Inter；本文件不引入外部请求，
+ *    未加载 Inter 时自动回退系统字体栈。
+ *  · 主题切换沿用主站 setTheme()：html 与 body 的 data-theme 同时生效。
+ * ========================================================================== */

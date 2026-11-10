@@ -66,8 +66,10 @@
   /* 总榜维度：all=综合，其余按四类命中口径重排（切换带交错动画） */
   const UDIMS = ['all', 'kill', 'dual', 'three', 'sum'];
   const ULABEL = { all: '综合', kill: '杀组', dual: '双组', three: '三门', sum: '和值' };
-  /* 整合规模：算法池 87 + 原站 49 公式 + 2 融合共识算法 = 138（全部同源逐期回测） */
+  /* 整合规模：算法池（87 原生 + 38 移植）+ 原站 49 公式 + 2 融合共识 = 176
+     移植数量由适配层在加载时写入 KA28_PORTED，全部算法同源逐期回测。 */
   const LEGACY_FORMULAS = 49, LEGACY_FUSION = 2;
+  const PORTED_COUNT = (window.KA28_PORTED && window.KA28_PORTED.count) || 0;
   const TOTAL_ALGOS = A.ALGOS.length + LEGACY_FORMULAS + LEGACY_FUSION;
 
   /* ===================== 数据 ===================== */
@@ -1233,7 +1235,7 @@
       <div class="k28-head">
         <div><div class="k28-kicker">KA28 · CANADA 28 PREDICTION SYSTEM</div>
           <h3 class="k28-title">加拿大28预测系统 · 综合输出</h3>
-          <p class="k28-sub">整合 ${TOTAL_ALGOS} 个算法（含 49 公式 + 2 融合共识）· 全部同源逐期回测 · 由统一排行榜前三自动统计杀组 / 双组 / 三门 / 和值</p></div>
+          <p class="k28-sub">整合 ${TOTAL_ALGOS} 个算法（含 CA28 / Maple28 移植 ${PORTED_COUNT} 个 + 49 公式 + 2 融合共识）· 全部同源逐期回测 · 由统一排行榜前三自动统计杀组 / 双组 / 三门 / 和值</p></div>
         <span class="k28-chip is-mint">综合输出 + 统一排行榜</span>
       </div>
       <div id="k28ConsensusBody"></div>`;
@@ -1274,7 +1276,7 @@
     trend.innerHTML = `<div class="k28-head"><div><div class="k28-kicker">DRAW HISTORY · TREND MATRIX</div>
       <h3 class="k28-title">开奖历史走势</h3><p class="k28-sub">期号 / 开奖号码 / 类型 / 大小 / 单双 / 四组合 / 边数 / 龙虎</p></div>
       <div class="k28-row" style="gap:8px;flex-wrap:wrap;justify-content:flex-end">
-        <span class="k28-chip" id="k28TrendThemeTag">浅色主题导出</span>
+        <span class="k28-chip" id="k28TrendThemeTag">原版 · 浅色导出</span>
         <button class="k28-btn is-primary" id="k28TrendExport">导出图片 ↓</button>
       </div></div>
       <div id="k28TrendBody"></div>`;
@@ -1399,7 +1401,7 @@
       if (src && src.textContent !== label) src.textContent = label;
     });
     const tag = $('#algoVotesTag');
-    if (tag) tag.textContent = `${LEGACY_FORMULAS} 个公式 + ${LEGACY_FUSION} 个融合共识 · 已整合 ${TOTAL_ALGOS} 个算法`;
+    if (tag) tag.textContent = `${PORTED_COUNT} 个移植 + ${LEGACY_FORMULAS} 个公式 + ${LEGACY_FUSION} 个融合共识 · 已整合 ${TOTAL_ALGOS} 个算法`;
     // 原站榜由 app.js 异步渲染，默认只有前三；补齐到 49 行后重算统一总榜
     if (rows.length !== lastLegacyCount) {
       lastLegacyCount = rows.length;
@@ -1484,11 +1486,44 @@
     `;
   }
 
-  /* 当前主题：原站 setTheme 会同时写 html[data-theme] 与 body[data-theme] */
+  /* 当前明暗：原站 setTheme / 外观设置都会同时写 html[data-theme] 与 body[data-theme] */
   function currentTheme() {
     const t = document.documentElement.dataset.theme || document.body.dataset.theme || 'light';
     return t === 'dark' ? 'dark' : 'light';
   }
+  /* 当前主题样式：由 React 外观设置写在 html[data-skin]，缺省为原版 */
+  function currentSkin() {
+    const s = document.documentElement.dataset.skin || document.body.dataset.skin || 'original';
+    return (s === 'ios' || s === 'cream') ? s : 'original';
+  }
+
+  /* ===================== 走势图导出的 6 种视觉风格 =====================
+   * 三套主题样式 × 两种明暗。每套的背景、面板、字体、装饰、强调色、表头
+   * 与水印都不同，因此导出的 PNG 一眼即可区分来自哪套皮肤，而不只是深浅差异。
+   * 表格的 13 列结构、行列尺寸、单元格真实红蓝走势色一律沿用原实现。 */
+  const EXPORT_STYLES = {
+    original: {
+      light: { name: '原版 · 浅色', tag: 'ORIGINAL / TERMINAL', surface: '#e6ebd3', panel: '#f4f7e3', ink: '#20291f', muted: '#657161', line: 'rgba(32,41,31,.16)', headBg: 'rgba(88,124,39,.14)', headInk: '#20291f', accent: '#587c27', soft: 'rgba(88,124,39,.09)', font: 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace', title: 'KA28 / 开奖历史走势', decor: 'scanline', radius: 0 },
+      dark: { name: '原版 · 深色', tag: 'ORIGINAL / TERMINAL', surface: '#081310', panel: '#0a1912', ink: '#edf2e9', muted: '#9aa89a', line: 'rgba(224,241,218,.15)', headBg: 'rgba(198,237,114,.15)', headInk: '#edf2e9', accent: '#c6ed72', soft: 'rgba(198,237,114,.08)', font: 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace', title: 'KA28 / 开奖历史走势', decor: 'scanline', radius: 0 }
+    },
+    ios: {
+      light: { name: 'iOS · 浅色', tag: 'MAPLE / iOS', surface: '#dde2f0', panel: '#ffffff', ink: '#1c1c1e', muted: '#6e6e73', line: 'rgba(60,60,67,.13)', headBg: 'rgba(200,16,46,.09)', headInk: '#1c1c1e', accent: '#c8102e', soft: 'rgba(200,16,46,.08)', font: '-apple-system, BlinkMacSystemFont, "PingFang SC", system-ui, sans-serif', title: '开奖历史走势', decor: 'glass', radius: 16 },
+      dark: { name: 'iOS · 深色', tag: 'MAPLE / iOS', surface: '#050509', panel: '#1c1c1e', ink: '#f2f2f7', muted: '#8e8e93', line: 'rgba(255,255,255,.13)', headBg: 'rgba(255,77,94,.17)', headInk: '#f2f2f7', accent: '#ff4d5e', soft: 'rgba(255,77,94,.10)', font: '-apple-system, BlinkMacSystemFont, "PingFang SC", system-ui, sans-serif', title: '开奖历史走势', decor: 'glass', radius: 16 }
+    },
+    cream: {
+      light: { name: '米白墨绿 · 浅色', tag: 'CREAM / TAILWIND', surface: '#ece3d2', panel: '#faf4e6', ink: '#20291f', muted: '#6b7166', line: 'rgba(26,107,87,.19)', headBg: 'rgba(26,107,87,.11)', headInk: '#20291f', accent: '#1a6b57', soft: 'rgba(26,107,87,.07)', font: 'Georgia, "Songti SC", "Noto Serif SC", "SimSun", serif', title: 'KA28 · 开奖历史走势', decor: 'paper', radius: 0 },
+      dark: { name: '米白墨绿 · 深色', tag: 'CREAM / TAILWIND', surface: '#131d16', panel: '#1c1810', ink: '#e8efe9', muted: '#93a49a', line: 'rgba(95,191,152,.19)', headBg: 'rgba(95,191,152,.13)', headInk: '#e8efe9', accent: '#5fbf98', soft: 'rgba(95,191,152,.08)', font: 'Georgia, "Songti SC", "Noto Serif SC", "SimSun", serif', title: 'KA28 · 开奖历史走势', decor: 'paper', radius: 0 }
+    }
+  };
+  const exportStyle = () => EXPORT_STYLES[currentSkin()][currentTheme()];
+  const roundRect = (g, x, y, w, h, r) => {
+    if (!r) { g.beginPath(); g.rect(x, y, w, h); return; }
+    g.beginPath();
+    g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r);
+    g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r);
+    g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
+  };
 
   /* 下载被浏览器拦截时的兜底：内联展示 PNG，可长按保存 / 新标签打开原图 */
   function showPNGFallback(src) {
@@ -1525,8 +1560,9 @@
     try {
       if (!S.hist.length || !$('#k28Trend')) { toast('走势表尚未就绪'); return; }
 
-      const theme = currentTheme();
-      const themeLabel = theme === 'dark' ? '深色主题' : '浅色主题';
+      const theme = currentTheme(), skin = currentSkin();
+      const st = EXPORT_STYLES[skin][theme];   // 当前皮肤对应的导出风格
+      const themeLabel = st.name;
       const dark = theme === 'dark';
 
       /* 构造「完整视图」的离屏表格：与网站点开「查看完整 13 列」后完全一致——
@@ -1571,6 +1607,12 @@
         headInk: solid(headCS ? headCS.color : '', dark ? '#edf2e9' : '#20291f'),
         blue: solid(blueEl ? getComputedStyle(blueEl).color : '', dark ? '#6aa9e0' : '#2f6fbd')
       };
+      /* 皮肤风格覆盖：站点计算样式仍用于单元格真实红蓝走势色与兜底，
+         导出图的背景 / 字色 / 线条 / 表头 / 强调色 / 字体则由当前皮肤风格决定。 */
+      C.panel = st.panel; C.surface = st.surface; C.ink = st.ink;
+      C.muted = st.muted; C.line = st.line; C.headBg = st.headBg;
+      C.headInk = st.headInk; C.blue = st.accent; C.accent = st.accent;
+      C.soft = st.soft; C.font = st.font;
 
       const heads = $$('.k28-trend thead th', fullTable);
       const bodyTrs = $$('.k28-trend tbody tr', fullTable);
@@ -1596,14 +1638,52 @@
       const g = cv.getContext('2d');
       if (!g) { toast('浏览器不支持 Canvas 导出'); return; }
       g.scale(dpr, dpr);
+      /* ---- 背景 + 皮肤专属装饰（三套风格互不相同） ---- */
       g.fillStyle = C.surface; g.fillRect(0, 0, W, H);
+      if (st.decor === 'scanline') {              // 原版：终端扫描线
+        g.strokeStyle = C.soft; g.lineWidth = 1;
+        for (let sy = 0; sy < H; sy += 4) { g.beginPath(); g.moveTo(0, sy + .5); g.lineTo(W, sy + .5); g.stroke(); }
+      } else if (st.decor === 'paper') {         // 米白墨绿：斜纹纸感
+        g.strokeStyle = C.soft; g.lineWidth = 1;
+        for (let sx = -H; sx < W; sx += 9) { g.beginPath(); g.moveTo(sx, 0); g.lineTo(sx + H, H); g.stroke(); }
+      }
+      const px = 9, py = 9, pw = W - 18, ph = H - 18;
+      g.save();
+      if (st.decor === 'glass') {                // iOS：白色圆角玻璃卡片
+        g.shadowColor = dark ? 'rgba(0,0,0,.55)' : 'rgba(0,0,0,.16)';
+        g.shadowBlur = 18; g.shadowOffsetY = 6;
+        g.fillStyle = C.panel; roundRect(g, px, py, pw, ph, st.radius); g.fill();
+        g.shadowColor = 'transparent'; g.shadowBlur = 0; g.shadowOffsetY = 0;
+        g.strokeStyle = C.line; g.lineWidth = 1; roundRect(g, px, py, pw, ph, st.radius); g.stroke();
+      } else {
+        g.fillStyle = C.panel; g.fillRect(px, py, pw, ph);
+        g.strokeStyle = C.accent; g.lineWidth = st.decor === 'paper' ? 1.4 : 1;
+        g.strokeRect(px + .5, py + .5, pw - 1, ph - 1);
+        if (st.decor === 'paper') {              // 米白墨绿：双线框 + 左侧竖线
+          g.strokeStyle = C.soft; g.lineWidth = 1;
+          g.strokeRect(px + 4.5, py + 4.5, pw - 9, ph - 9);
+          g.fillStyle = C.accent; g.fillRect(px, py, 3, ph);
+        }
+      }
+      g.restore();
+      /* 标题栏装饰：三套都用各自强调色画全宽色带，形式不同
+         （原版直角实心 / iOS 圆角胶囊 / 米白墨绿双线），一眼即可分辨风格。 */
+      const barY = py + 2, barW = pw;
+      if (st.decor === 'scanline') {
+        g.fillStyle = C.accent; g.fillRect(px, barY, barW, 5);
+      } else if (st.decor === 'glass') {
+        g.fillStyle = C.accent; roundRect(g, px, barY, barW, 6, 3); g.fill();
+      } else {
+        g.fillStyle = C.accent; g.fillRect(px, barY, barW, 2.5);
+        g.fillStyle = C.soft; g.fillRect(px, barY + 4, barW, 1.5);
+      }
       g.textBaseline = 'middle';
 
       g.textAlign = 'left'; g.fillStyle = C.ink;
-      g.font = '700 17px system-ui, -apple-system, "PingFang SC", sans-serif';
-      g.fillText('KA28 · 开奖历史走势', pad, pad + 12);
-      g.fillStyle = C.muted; g.font = '11px system-ui, -apple-system, sans-serif';
-      g.fillText(`真实开奖 · 最新 ${Math.max(0, grid.length - 2)} 期 · 共 ${S.hist.length} 期 · ${themeLabel} · ${new Date().toLocaleString('zh-CN')}`, pad, pad + 32);
+      g.font = `700 17px ${C.font}`;
+      g.fillText(st.title, pad, pad + 12);
+      g.fillStyle = C.muted; g.font = `11px ${C.font}`;
+      g.fillText(`真实开奖 · 最新 ${Math.max(0, grid.length - 2)} 期 · 共 ${S.hist.length} 期 · ${st.tag} · ${themeLabel} · ${new Date().toLocaleString('zh-CN')}`, pad, pad + 32);
 
       let y = pad + titleH;
       grid.forEach((row, ri) => {
@@ -1611,8 +1691,8 @@
         row.forEach((cell, ci) => {
           const w = colW[ci] || 48, h = rowH;
           if (cell.head) {
-            // 表头底色直接取网站 thead th 解析后的 color-mix 结果，深浅主题各自贴合
-            g.fillStyle = C.surface; g.fillRect(x, y, w, h);
+            // 表头底色：由当前皮肤风格给定（原版薄荷 / iOS 枫叶红 / 米白墨绿）
+            g.fillStyle = C.panel; g.fillRect(x, y, w, h);
             if (C.headBg) g.fillStyle = C.headBg;
             else { g.fillStyle = C.blue; g.globalAlpha = .15; }
             g.fillRect(x, y, w, h); g.globalAlpha = 1;
@@ -1632,7 +1712,7 @@
           }
           if (cell.text) {
             g.fillStyle = cell.head ? C.headInk : (cell.color || C.ink);
-            g.font = `${cell.head ? 640 : 560} ${cell.head ? 12 : 11.5}px system-ui, -apple-system, "PingFang SC", sans-serif`;
+            g.font = `${cell.head ? 640 : 560} ${cell.head ? 12 : 11.5}px ${C.font}`;
             g.textAlign = 'center';
             g.fillText(cell.text, x + w / 2, y + h / 2, w - 6);
           }
@@ -1641,14 +1721,15 @@
         y += rowH;
       });
       g.textAlign = 'left'; g.fillStyle = C.muted;
-      g.font = '10.5px system-ui, -apple-system, sans-serif';
+      g.font = `10.5px ${C.font}`;
       g.fillText('红蓝配色沿用传统走势表（双系红、单系蓝）；黑框为连续 3 期以上长龙；「未开间隔」为距最近一次出现的期数。', pad, y + 16);
-      g.fillText('KA28 预测实验室 · 统计研究用途，不构成投注建议', pad, y + 32);
+      g.fillStyle = C.accent;
+      g.fillText(`KA28 预测实验室 · ${st.tag} 风格导出 · 统计研究用途，不构成投注建议`, pad, y + 32);
 
       /* ---- 下载链路：blob + download 为主，逐级回退，确保一定能拿到 PNG ----
        * 覆盖：toBlob 不可用 / 返回空 / 回调不触发 / a.download 不被支持（部分 WebView）/
        *       点击被拦截 —— 最后一级给出「长按图片保存」的内联预览层。 */
-      const fileName = `KA28-开奖走势-${new Date().toISOString().slice(0, 10)}-${S.hist.at(-1)?.id || ''}-${theme === 'dark' ? '深色' : '浅色'}.png`;
+      const fileName = `KA28-开奖走势-${new Date().toISOString().slice(0, 10)}-${S.hist.at(-1)?.id || ''}-${skin}-${theme === 'dark' ? '深色' : '浅色'}.png`;
       const supportsDownload = 'download' in document.createElement('a');
       const aClick = (href, revoke) => {
         const a = document.createElement('a');
@@ -1665,7 +1746,7 @@
           return true;
         } catch (_) { toast('导出失败，请刷新后重试'); return false; }
       };
-      const done = () => toast(`PNG 已导出 · 完整 13 列 · ${themeLabel}`);
+      const done = () => toast(`PNG 已导出 · 完整 13 列 · ${st.tag} 风格 · ${themeLabel}`);
       toast('正在生成 PNG…');
       let settled = false;
       // 部分移动端 WebView 的 toBlob 回调可能不触发：5 秒后强制走 dataURL 兜底
@@ -1872,17 +1953,18 @@
     clearTimeout(el._t); el._t = setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translate(-50%,-12px)'; }, 2600);
   }
 
-  /* 导出按钮旁的主题标签：随 html/body[data-theme] 实时变化，提示导出图会跟随配色 */
+  /* 导出按钮旁的风格标签：随 data-theme / data-skin 实时变化，
+     提示导出的 PNG 会按「当前主题样式 × 明暗」呈现对应风格。 */
   function bindThemeTag() {
     const upd = () => {
       const el = $('#k28TrendThemeTag');
-      if (el) el.textContent = (currentTheme() === 'dark' ? '深色' : '浅色') + '主题导出';
+      if (el) el.textContent = exportStyle().name + '导出';
     };
     upd();
     if (!window.MutationObserver) return;
     const ob = new MutationObserver(upd);
-    ob.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    ob.observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
+    ob.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-skin'] });
+    ob.observe(document.body, { attributes: true, attributeFilter: ['data-theme', 'data-skin'] });
   }
 
   /* ===================== 启动 ===================== */

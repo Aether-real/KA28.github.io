@@ -24,10 +24,17 @@
 <!-- 离线真实开奖快照 + 算法注册表 + 回测引擎 + 应用层（严格顺序，defer 保证） -->
 <script defer="" src="./js/ka28-data.js?v=20261107-ka28g"></script>
 <script defer="" src="./js/ka28-algos.js?v=20261107-ka28g"></script>
+<!-- 移植算法：ca28-pro / maple28 两套 engine.ts 编译产物 + 适配层。
+     必须在 ka28-backtest.js 之前加载（后者会解构 A.predict / A.ALGOS）。 -->
+<script defer="" src="./js/ca28-engine.bundle.js?v=ported-1"></script>
+<script defer="" src="./js/maple28-engine.bundle.js?v=ported-1"></script>
+<script defer="" src="./js/ka28-ported-algos.js?v=ported-1"></script>
 <script defer="" src="./js/ka28-backtest.js?v=20261107-ka28g"></script>
 <script defer="" src="./js/ka28-app.js?v=20261107-ka28g"></script>
 <!-- 轻量源码防护放最后，避免影响业务脚本绑定 -->
 <script defer="" src="./js/ka28-guard.js?v=20261107-ka28g"></script>
+  <script defer src="./assets/settings.js"></script>
+  <link rel="stylesheet" href="./assets/index-B_4a31dK.css">
 </head>
 <body class="ka28-redesign" data-data-ready="false">
 <div aria-live="polite" class="ka28-boot-notice" id="ka28BootNotice" role="status">正在加载 KA28 组件…</div>
@@ -229,10 +236,6 @@
   </section>
   <footer class="footer"><span>KA28开奖网 · @Kaelan制作</span><span>数据来源：<a href="https://pc28.world/apidoc" rel="noopener" target="_blank">pc28.world API 文档</a> · 只供统计研究，不构成投注建议。</span></footer>
 </div>
-<!-- 悬浮主题球：固定在视口右下角，不占用顶栏操作空间。 -->
-<button aria-label="切换到暗色主题" aria-pressed="false" class="theme-orb" id="themeBtn" title="切换亮色/暗色主题" type="button">
-<svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M20.5 15.1A8.6 8.6 0 0 1 8.9 3.5 8.8 8.8 0 1 0 20.5 15.1Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-</button>
 <div class="algo-sheet-backdrop" hidden="" id="algoSheetBackdrop"></div>
 <section aria-labelledby="algoSheetTitle" aria-modal="true" class="algo-sheet" hidden="" id="algoSheet" role="dialog">
 <div aria-hidden="true" class="sheet-grabber"></div>
@@ -241,5 +244,7 @@
 <div class="sheet-foot"><span id="sheetSelectionCount">当前未打开算法</span><button class="btn secondary mini" id="clearAlgoSelection" type="button">关闭面板</button></div>
 </section>
 <div aria-live="polite" class="toast" id="toast" role="status"></div>
+<!-- 外观设置：React 19 挂载点（本项目唯一新增的 UI，display:contents 不占文档流） -->
+<div id="ka28-settings-root"></div>
 </body>
 </html>
